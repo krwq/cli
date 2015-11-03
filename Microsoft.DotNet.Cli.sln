@@ -54,6 +54,10 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Microsoft.DotNet.Tools.Run"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Microsoft.Dotnet.Cli.Compiler.Common", "src\Microsoft.DotNet.Compiler.Common\Microsoft.Dotnet.Cli.Compiler.Common.xproj", "{A16958E1-24C7-4F1E-B317-204AD91625DD}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{EEF7DE11-D8A6-4CBB-BFC3-032A1B72608F}"
+EndProject
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "Microsoft.DotNet.ProjectModel.Tests", "tests\Microsoft.DotNet.ProjectModel.Tests\Microsoft.DotNet.ProjectModel.Tests.xproj", "{D803DAE9-812C-4E79-957D-A9D4CE95D212}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
