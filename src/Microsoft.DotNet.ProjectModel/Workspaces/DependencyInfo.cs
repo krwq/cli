@@ -26,6 +26,7 @@ namespace Microsoft.Extensions.ProjectModel.Workspaces
         public IList<ProjectReference> ProjectReferences { get; }
 
         public IList<string> ExportedSourcesFiles { get; }
+
         //public Dictionary<string, byte[]> RawReferences { get; set; } = new Dictionary<string, byte[]>();
     }
 }
