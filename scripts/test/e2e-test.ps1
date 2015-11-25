@@ -22,10 +22,10 @@ if (!$?) {
 ## Need x64 Native Tools Dev Prompt Env Vars
 ## Tracked Here: https://github.com/dotnet/cli/issues/301
 pushd "$env:VS140COMNTOOLS\..\..\VC"
-cmd /c “vcvarsall.bat x64&set” |
+cmd /c "vcvarsall.bat x64&set" |
 foreach {
-  if ($_ -match “=”) {
-    $v = $_.split(“=”); set-item -force -path "ENV:\$($v[0])"  -value "$($v[1])"
+  if ($_ -match "=") {
+    $v = $_.split("="); set-item -force -path "ENV:\$($v[0])"  -value "$($v[1])"
   }
 }
 popd
