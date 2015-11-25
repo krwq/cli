@@ -140,7 +140,3 @@ namespace Microsoft.DotNet.Cli.Utils
         }
     }
 }
-<<<<<<< HEAD
-
-=======
->>>>>>> 6e46581... Copy of AnsiConsole from aspnet/dnx/dev/src/Microsoft.Extensions.CommandLineUtils.Sources
