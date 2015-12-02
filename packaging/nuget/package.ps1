@@ -11,7 +11,7 @@ $Projects = @(
     "Microsoft.DotNet.ProjectModel.Workspaces",
     "Microsoft.DotNet.Runtime",
     "Microsoft.Extensions.Testing.Abstractions"
-    )
+)
 
 foreach ($ProjectName in $Projects) {
     $ProjectFile = "$RepoRoot\src\$ProjectName\project.json"
