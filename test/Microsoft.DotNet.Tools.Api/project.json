@@ -4,6 +4,9 @@
     "compilationOptions": {
         "emitEntryPoint": true
     },
+    "commands": {
+        "dotnet api": "Microsoft.DotNet.Tools.Api"
+    },
     "dependencies": {
         "Microsoft.CSharp": "4.0.1-beta-23409",
         "System.Collections": "4.0.11-beta-23409",
@@ -18,11 +21,5 @@
     },
     "frameworks": {
         "dnxcore50": { }
-    },
-    "scripts": {
-        "postcompile": [
-            "../../scripts/build/place-binary \"%compile:OutputDir%/%project:Name%.dll\"",
-            "../../scripts/build/place-binary \"%compile:OutputDir%/%project:Name%.pdb\""
-        ]
     }
 }

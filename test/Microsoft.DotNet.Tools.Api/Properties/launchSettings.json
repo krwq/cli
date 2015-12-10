@@ -1,7 +1,7 @@
 {
   "profiles": {
     "dotnet api": {
-      "executablePath": "..\\..\\artifacts\\win7-x64\\stage2\\bin",
+      "commandName": "dotnet api",
       "commandLineArgs": "XmlReader"
     }
   }
