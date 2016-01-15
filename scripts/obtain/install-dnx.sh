@@ -24,7 +24,7 @@ doInstall=true
 
 DNX_FEED="https://www.myget.org/F/aspnetvolatiledev/api/v2/package/"
 DNX_PACKAGE_VERSION="1.0.0-rc1-update1"
-DNX_VERSION="1.0.0-rc1-16231"
+DNX_VERSION="1.0.0-rc1-16390"
 
 if [ "$OSNAME" == "osx" ]; then
     DNX_FLAVOR="dnx-coreclr-darwin-x64"
