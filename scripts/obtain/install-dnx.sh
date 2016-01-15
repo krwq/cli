@@ -22,7 +22,7 @@ say() {
 
 doInstall=true
 
-DNX_FEED="https://api.nuget.org/packages"
+DNX_FEED="https://www.myget.org/F/aspnetvolatiledev/api/v2/package/"
 DNX_PACKAGE_VERSION="1.0.0-rc1-update1"
 DNX_VERSION="1.0.0-rc1-16231"
 
@@ -42,7 +42,7 @@ else
     exit 1
 fi    
 
-DNX_URL="$DNX_FEED/$DNX_FLAVOR.$DNX_PACKAGE_VERSION.nupkg"
+DNX_URL="$DNX_FEED/$DNX_FLAVOR/$DNX_PACKAGE_VERSION"
 
 say "Preparing to install DNX to $DNX_DIR"
 say "Requested Version: $DNX_VERSION"
@@ -68,4 +68,5 @@ if [ $doInstall = true ] ; then
     curl -o $DNX_DIR/dnx.zip $DNX_URL --silent
     unzip -qq $DNX_DIR/dnx.zip -d $DNX_DIR
     chmod a+x $DNX_ROOT/dnu $DNX_ROOT/dnx   
+
 fi

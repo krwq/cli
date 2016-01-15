@@ -5,8 +5,8 @@
 
 . $PSScriptRoot\..\common\_common.ps1
 
-$DnxPackage = "dnx-coreclr-win-x64.1.0.0-rc1-update1.nupkg"
-$DnxVersion = "1.0.0-rc1-16231"
+$DnxFlavor = "dnx-coreclr-win-x64"
+$DnxVersion = "1.0.0-rc2-16390"
 
 $doInstall = $true
 
@@ -28,7 +28,7 @@ if ($doInstall)
     mkdir -Force "$DnxDir" | Out-Null
 
     Write-Host "Downloading Dnx version - $DnxVersion."
-    $DnxUrl="https://api.nuget.org/packages/$DnxPackage"
+    $DnxUrl="https://www.myget.org/F/aspnetvolatiledev/api/v2/package/$DnxFlavor/$DnxVersion"
     Invoke-WebRequest -UseBasicParsing "$DnxUrl" -OutFile "$DnxDir\dnx.zip"
 
     Add-Type -Assembly System.IO.Compression.FileSystem | Out-Null
