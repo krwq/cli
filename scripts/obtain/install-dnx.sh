@@ -28,8 +28,10 @@ DNX_VERSION="1.0.0-rc1-16390"
 
 if [ "$OSNAME" == "osx" ]; then
     DNX_FLAVOR="dnx-coreclr-darwin-x64"
+    DNX_URL="$DNX_FEED/$DNX_FLAVOR/$DNX_PACKAGE_VERSION"
 elif [ "$OSNAME" == "ubuntu" ]; then
     DNX_FLAVOR="dnx-coreclr-linux-x64"
+    DNX_URL="$DNX_FEED/$DNX_FLAVOR/$DNX_PACKAGE_VERSION"
 elif [ "$OSNAME" == "centos"  ]; then
     # No support dnx on redhat yet.
     # using patched dnx
@@ -37,12 +39,14 @@ elif [ "$OSNAME" == "centos"  ]; then
     DNX_PACKAGE_VERSION="1.0.0-rc2-15000"
     DNX_VERSION="1.0.0-rc2-15000"
     DNX_FLAVOR="dnx-coreclr-redhat-x64"
+
+    DNX_URL="$DNX_FEED/$DNX_FLAVOR.$DNX_PACKAGE_VERSION.nupkg"
 else
     error "unknown OS: $OSNAME" 1>&2
     exit 1
 fi    
 
-DNX_URL="$DNX_FEED/$DNX_FLAVOR/$DNX_PACKAGE_VERSION"
+
 
 say "Preparing to install DNX to $DNX_DIR"
 say "Requested Version: $DNX_VERSION"
