@@ -200,11 +200,13 @@ namespace Microsoft.DotNet.Cli.Utils
             {
                 var preferredCommandPath = Env.GetCommandPath(commandName, ".exe");
 
-                if (preferredCommandPath != null)
+                // Use cmd if we can't find an exe
+                if (preferredCommandPath == null)
                 {
-                    commandPath = Environment.GetEnvironmentVariable("ComSpec");
+                    var cmdEscapedArgs = ArgumentEscaper.EscapeArgStringForCmd(args);
 
-                    args = $"/S /C \"\"{preferredCommandPath}\" {args}\"";
+                    args = $"/S /C \"\"{commandPath}\" {cmdEscapedArgs}\"";
+                    commandPath = Environment.GetEnvironmentVariable("ComSpec");
                 }
             }
 
@@ -212,3 +214,4 @@ namespace Microsoft.DotNet.Cli.Utils
         }
     }
 }
+
