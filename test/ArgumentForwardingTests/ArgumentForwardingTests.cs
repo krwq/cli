@@ -11,154 +11,135 @@ using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.ProjectModel;
 using Microsoft.DotNet.Tools.Test.Utilities;
 using Microsoft.Extensions.PlatformAbstractions;
+using System.Diagnostics;
+using FluentAssertions;
 
 namespace Microsoft.DotNet.Tests.ArgumentForwarding
 {
     public class ArgumentForwardingTests : TestBase
     {
-        private static readonly string s_expectedOutput = "Hello World!" + Environment.NewLine;
-        private static readonly string s_testdirName = "e2etestroot";
-        private static readonly string s_outputdirName = "testbin";
-        
-        private string Rid { get; set; }
-        private string TestDirectory { get; set; }
-        private string TestProject { get; set; }
-        private string OutputDirectory { get; set; }
+        private static readonly string s_reflectorExeName = "reflector" + Constants.ExeSuffix;
+
+        private string ReflectorPath { get; set; }
 
         public static void Main()
         {
             Console.WriteLine("Dummy Entrypoint.");
         }
        
-        public EndToEndTest()
+        public ArgumentForwardingTests()
         {
-            TestSetup();
-
-            Rid = PlatformServices.Default.Runtime.GetLegacyRestoreRuntimeIdentifier();
+            // This test has a dependency on an argument reflector
+            // Make sure it's been binplaced properly
+            FindAndEnsureReflectorPresent();
         }
 
-        [Fact]
-        public void TestDotnetBuild()
+        private void FindAndEnsureReflectorPresent()
         {
-            var buildCommand = new BuildCommand(TestProject, output: OutputDirectory);
+            ReflectorPath = Path.Combine(AppContext.BaseDirectory, s_reflectorExeName);
 
-            buildCommand.Execute().Should().Pass();
-
-            TestOutputExecutable(OutputDirectory, buildCommand.GetOutputExecutableName());
+            File.Exists(ReflectorPath).Should().BeTrue();
         }
 
-        [Fact]
-        [ActiveIssue(712, PlatformID.Windows | PlatformID.OSX | PlatformID.Linux)]
-        public void TestDotnetBuildNativeRyuJit()
+        /// <summary>
+        /// Tests argument forwarding in Command.Create
+        /// This is a critical scenario for the driver.
+        /// </summary>
+        /// <param name="testUserArgument"></param>
+        [Theory]
+        [InlineData(@"""abc"" d e")]
+        [InlineData(@"""abc""      d e")]
+        [InlineData("\"abc\"\t\td\te")]
+        [InlineData(@"a\\b d""e f""g h")]
+        [InlineData(@"\ \\ \\\")]
+        [InlineData(@"a\""b c d")]
+        [InlineData(@"a\\""b c d")]
+        [InlineData(@"a\\\""b c d")]
+        [InlineData(@"a\\\\""b c d")]
+        [InlineData(@"a\\\\""b c d")]
+        [InlineData(@"a\\\\""b c"" d e")]
+        [InlineData(@"a""b c""d e""f g""h i""j k""l")]
+        [InlineData(@"a b c""def")]
+        [InlineData(@"""\a\"" \\""\\\ b c")]
+        [InlineData(@"a\""b \\ cd ""\e f\"" \\""\\\")]
+        public void TestArgumentForwarding(string testUserArgument)
         {
-            if(IsCentOS())
+            // Get Baseline Argument Evaluation via Reflector
+            var rawEvaluatedArgument = RawEvaluateArgumentString(testUserArgument);
+
+            // Escape and Re-Evaluate the rawEvaluatedArgument
+            var escapedEvaluatedRawArgument = EscapeAndEvaluateArgumentString(rawEvaluatedArgument);
+
+            rawEvaluatedArgument.Length.Should().Be(escapedEvaluatedRawArgument.Length);
+
+            for (int i=0; i<rawEvaluatedArgument.Length; ++i)
             {
-                Console.WriteLine("Skipping native compilation tests on CentOS - https://github.com/dotnet/cli/issues/453");
-                return;
+                var rawArg = rawEvaluatedArgument[i];
+                var escapedArg = escapedEvaluatedRawArgument[i];
+
+                rawArg.Should().Be(escapedArg);
             }
-
-            var buildCommand = new BuildCommand(TestProject, output: OutputDirectory, native: true);
-
-            buildCommand.Execute().Should().Pass();
-
-            var nativeOut = Path.Combine(OutputDirectory, "native");
-            TestOutputExecutable(nativeOut, buildCommand.GetOutputExecutableName());
         }
 
-        [Fact]
-        public void TestDotnetBuildNativeCpp()
+        /// <summary>
+        /// EscapeAndEvaluateArgumentString returns a representation of string[] args
+        /// when rawEvaluatedArgument is passed as an argument to a process using
+        /// Command.Create(). Ideally this should escape the argument such that 
+        /// the output is == rawEvaluatedArgument.
+        /// </summary>
+        /// <param name="rawEvaluatedArgument">A string[] representing string[] args as already evaluated by a process</param>
+        /// <returns></returns>
+        private string[] EscapeAndEvaluateArgumentString(string[] rawEvaluatedArgument)
         {
-            if(IsCentOS())
+            var commandResult = Command.Create(ReflectorPath, rawEvaluatedArgument)
+                .CaptureStdErr()
+                .CaptureStdOut()
+                .Execute();
+
+            commandResult.ExitCode.Should().Be(0);
+
+            return ParseReflectorOutput(commandResult.StdOut);
+        }
+
+        /// <summary>
+        /// Parse the output of the reflector into a string array.
+        /// Reflector output is simply string[] args written to 
+        /// one string separated by commas.
+        /// </summary>
+        /// <param name="reflectorOutput"></param>
+        /// <returns></returns>
+        private string[] ParseReflectorOutput(string reflectorOutput)
+        {
+            return reflectorOutput.Split(',');
+        }
+
+        /// <summary>
+        /// RawEvaluateArgumentString returns a representation of string[] args
+        /// when testUserArgument is provided (unmodified) as arguments to a c#
+        /// process.
+        /// </summary>
+        /// <param name="testUserArgument">A test argument representing what a "user" would provide to a process</param>
+        /// <returns>A string[] representing string[] args with the provided testUserArgument</returns>
+        private string[] RawEvaluateArgumentString(string testUserArgument)
+        {
+            var proc = new Process
             {
-                Console.WriteLine("Skipping native compilation tests on CentOS - https://github.com/dotnet/cli/issues/453");
-                return;
-            }
-
-            var buildCommand = new BuildCommand(TestProject, output: OutputDirectory, native: true, nativeCppMode: true);
-
-            buildCommand.Execute().Should().Pass();
-
-            var nativeOut = Path.Combine(OutputDirectory, "native");
-            TestOutputExecutable(nativeOut, buildCommand.GetOutputExecutableName());
-        }
-
-        [Fact]
-        public void TestDotnetRun()
-        {
-            var runCommand = new RunCommand(TestProject);
-
-            runCommand.Execute()
-                .Should()
-                .Pass();
-        }
-        
-        [Fact]
-        public void TestDotnetPack()
-        {
-            var packCommand = new PackCommand(TestDirectory, output: OutputDirectory);
-
-            packCommand.Execute()
-                .Should()
-                .Pass();
-        }
-
-        [Fact]
-        public void TestDotnetPublish()
-        {
-            var publishCommand = new PublishCommand(TestProject, output: OutputDirectory);
-            publishCommand.Execute().Should().Pass();
-
-            TestOutputExecutable(OutputDirectory, publishCommand.GetOutputExecutable());    
-        }
-
-        private void TestSetup()
-        {
-            var root = Temp.CreateDirectory();
-
-            TestDirectory = root.CreateDirectory(s_testdirName).Path;
-            TestProject = Path.Combine(TestDirectory, "project.json");
-            OutputDirectory = Path.Combine(TestDirectory, s_outputdirName);
-
-            InitializeTestDirectory();   
-        }
-
-        private void InitializeTestDirectory()
-        {
-            var currentDirectory = Directory.GetCurrentDirectory();
-            Directory.SetCurrentDirectory(TestDirectory);
-
-            new NewCommand().Execute().Should().Pass();
-            new RestoreCommand().Execute("--quiet").Should().Pass();
-
-            Directory.SetCurrentDirectory(currentDirectory);
-        }
-
-        private void TestOutputExecutable(string outputDir, string executableName)
-        {
-            var executablePath = Path.Combine(outputDir, executableName);
-
-            var executableCommand = new TestCommand(executablePath);
-
-            var result = executableCommand.ExecuteWithCapturedOutput("");
-
-            result.Should().HaveStdOut(s_expectedOutput);
-            result.Should().NotHaveStdErr();
-            result.Should().Pass();
-        }
-
-        private bool IsCentOS()
-        {
-            if(RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                const string OSIDFILE = "/etc/os-release";
-
-                if(File.Exists(OSIDFILE))
+                StartInfo = new ProcessStartInfo
                 {
-                    return File.ReadAllText(OSIDFILE).ToLower().Contains("centos");
+                    FileName = s_reflectorExeName,
+                    Arguments = testUserArgument,
+                    UseShellExecute = false,
+                    RedirectStandardOutput = true,
+                    CreateNoWindow = true
                 }
-            }
+            };
 
-            return false;
+            proc.Start();
+            var stdOut = proc.StandardOutput.ReadToEnd();
+
+            Assert.Equal(0, proc.ExitCode);
+
+            return ParseReflectorOutput(stdOut);
         }
     }
 }

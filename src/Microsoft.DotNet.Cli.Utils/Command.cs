@@ -41,7 +41,8 @@ namespace Microsoft.DotNet.Cli.Utils
 
         public static Command Create(string commandName, IEnumerable<string> args, NuGetFramework framework = null)
         {
-            return Create(commandName, string.Join(" ", args), framework);
+            var escapedArgs = ArgumentEscaper.EscapeArgArray(args);
+            return Create(commandName, escapedArgs, framework);
         }
 
         public static Command Create(string commandName, string args, NuGetFramework framework = null)
