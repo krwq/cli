@@ -90,7 +90,7 @@ namespace Microsoft.DotNet.Tools.Run
             var tempDir = Path.Combine(_context.ProjectDirectory, "bin", ".dotnetrun", Guid.NewGuid().ToString("N"));
 
             // Compile to that directory
-            var result = Command.Create($"dotnet-build", new string[]
+            var result = Command.Create($"dotnet-build", new []
                 {
                     $"--output",
                     $"{tempDir}",
@@ -143,7 +143,7 @@ namespace Microsoft.DotNet.Tools.Run
                 }
             }
 
-            result = Command.Create(outputName, _args.ToArray())
+            result = Command.Create(outputName, _args)
                 .ForwardStdOut()
                 .ForwardStdErr()
                 .EnvironmentVariable("DOTNET_HOME", runtime)
@@ -160,7 +160,7 @@ namespace Microsoft.DotNet.Tools.Run
 
         private static int RunInteractive(string scriptName)
         {
-            var command = Command.Create($"dotnet-repl-csi", scriptName)
+            var command = Command.Create($"dotnet-repl-csi", new [] {scriptName})
                 .ForwardStdOut()
                 .ForwardStdErr();
             var result = command.Execute();
