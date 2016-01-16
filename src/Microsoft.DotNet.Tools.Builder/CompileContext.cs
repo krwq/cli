@@ -255,13 +255,40 @@ namespace Microsoft.DotNet.Tools.Build
 
         private bool InvokeCompileOnDependency(ProjectDescription projectDependency)
         {
-            var compileResult = Command.Create("dotnet-compile",
-                $"--framework {projectDependency.Framework} " +
-                $"--configuration {_args.ConfigValue} " +
-                $"--output \"{_args.OutputValue}\" " +
-                $"--temp-output \"{_args.IntermediateValue}\" " +
-                (_args.NoHostValue ? "--no-host " : string.Empty) +
-                $"\"{projectDependency.Project.ProjectDirectory}\"")
+            string[] args;
+            if (_args.NoHostValue)
+            {
+                args = new string[]
+                {
+                    $"--framework",
+                    $"{projectDependency.Framework}",
+                    $"--configuration",
+                    $"{_args.ConfigValue}",
+                    $"--output",
+                    $"{_args.OutputValue}",
+                    $"--temp-output",
+                    $"{_args.IntermediateValue}",
+                    "--no-host",
+                    $"{projectDependency.Project.ProjectDirectory}"
+                };
+            }
+            else
+            {
+                args = new string[]
+               {
+                    $"--framework",
+                    $"{projectDependency.Framework}",
+                    $"--configuration",
+                    $"{_args.ConfigValue}",
+                    $"--output",
+                    $"{_args.OutputValue}",
+                    $"--temp-output",
+                    $"{_args.IntermediateValue}",
+                    $"{projectDependency.Project.ProjectDirectory}"
+               };
+            }
+
+            var compileResult = Command.Create("dotnet-compile", args)
                 .ForwardStdOut()
                 .ForwardStdErr()
                 .Execute();
@@ -272,6 +299,18 @@ namespace Microsoft.DotNet.Tools.Build
         private bool InvokeCompileOnRootProject()
         {
             // todo: add methods to CompilerCommandApp to generate the arg string?
+            List<string> args = new List<string>();
+            args.Add("--framework");
+            args.Add(_rootProject.TargetFramework.ToString());
+            args.Add("--configuration");
+            args.Add(_args.ConfigValue);
+            args.Add("--output");
+            args.Add(_args.OutputValue);
+            args.Add("--temp-output");
+            args.Add(_args.IntermediateValue);
+
+            if (_args.NoHostValue) args.Add("--no-host");
+
             var compileResult = Command.Create("dotnet-compile",
                 $"--framework {_rootProject.TargetFramework} " +
                 $"--configuration {_args.ConfigValue} " +

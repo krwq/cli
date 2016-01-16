@@ -165,8 +165,18 @@ namespace Microsoft.DotNet.Tools.Restore
             Console.WriteLine($"Restoring Tool '{tooldep.Name}' for '{projectPath}' in '{tempPath}'");
 
             File.WriteAllText(projectPath, GenerateProjectJsonContents(new[] {"dnxcore50"}));
-            Dnx.RunPackageInstall(tooldep, projectPath, args);
-            Dnx.RunRestore(new [] { $"\"{projectPath}\"", "--runtime", $"{DefaultRid}"}.Concat(args));
+            
+            var installResult = Dnx.RunPackageInstall(tooldep, projectPath, args);
+            if (installResult != 0)
+            {
+                throw new Exception("Tool Restoration Failed. Please ensure this package exists.");
+            }
+
+            var restoreResult = Dnx.RunRestore(new [] { $"{projectPath}", "--runtime", $"{DefaultRid}"}.Concat(args));
+            if (restoreResult != 0)
+            {
+                throw new Exception("Tool Restoration Failed. Please ensure this package exists.");
+            }
         }
 
         private static string GenerateProjectJsonContents(IEnumerable<string> frameworks = null)

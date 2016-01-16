@@ -16,7 +16,7 @@ if (!$?) {
     Exit 1
 }
 
-dotnet publish --framework "dnxcore50" --runtime "$Rid" --output "$ArgTestBinRoot" --configuration "$Configuration" "$ArgTestRoot\Reflector"
+dotnet publish --framework "dnxcore50" --runtime "$Rid" --output "$ArgTestBinRoot" --configuration "$Configuration" "$ArgTestRoot\ArgumentForwardingTests"
 if (!$?) {
     Write-Host Command failed: dotnet publish --framework "dnxcore50" --runtime "$Rid" --output "$ArgTestBinRoot" --configuration "$Configuration" "$ArgTestRoot\ArgumentForwardingTests"
     Exit 1
@@ -24,7 +24,7 @@ if (!$?) {
 
 pushd $ArgTestBinRoot
 
-& ".\corerun" "xunit.console.netcore.exe" "$_.dll" -xml "$_-testResults.xml" -notrait category=failing
+& ".\corerun" "xunit.console.netcore.exe" "ArgumentForwardingTests.dll" -xml "$_-testResults.xml" -notrait category=failing
 $exitCode = $LastExitCode
 
 popd

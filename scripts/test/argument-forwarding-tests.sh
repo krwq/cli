@@ -17,11 +17,11 @@ DIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 source "$DIR/../common/_common.sh"
 
-TestRoot = "$REPOROOT/test/ArgumentForwardingTests"
-TestBinRoot="$REPOROOT/artifacts/tests/arg-forwarding"
+ArgTestRoot = "$REPOROOT/test/ArgumentForwardingTests"
+ArgTestBinRoot="$REPOROOT/artifacts/tests/arg-forwarding"
 
-dotnet publish --framework "dnxcore50" --runtime "$RID" --output "$TestBinRoot" --configuration "$CONFIGURATION" "$TestRoot/Reflector"
-dotnet publish --framework "dnxcore50" --runtime "$RID" --output "$TestBinRoot" --configuration "$CONFIGURATION" "$TestRoot/ArgumentForwardingTests"
+dotnet publish --framework "dnxcore50" --runtime "$RID" --output "$ArgTestBinRoot" --configuration "$CONFIGURATION" "$ArgTestRoot/Reflector"
+dotnet publish --framework "dnxcore50" --runtime "$RID" --output "$ArgTestBinRoot" --configuration "$CONFIGURATION" "$ArgTestRoot/ArgumentForwardingTests"
 
 pushd $TestBinRoot
 ./corerun "xunit.console.netcore.exe" "ArgumentForwardingTests.dll" -xml "ArgumentForwardingTests-testResults.xml" -notrait category=failing
