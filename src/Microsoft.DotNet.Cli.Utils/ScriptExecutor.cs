@@ -45,24 +45,19 @@ namespace Microsoft.DotNet.Cli.Utils
                 var comSpec = Environment.GetEnvironmentVariable("ComSpec");
                 if (!string.IsNullOrEmpty(comSpec))
                 {
-                    scriptArguments =
-                        new[] { comSpec, "/S", "/C", "\"" }
-                        .Concat(scriptArguments)
-                        .Concat(new[] { "\"" })
-                        .ToArray();
+                    string cmdArgs = ArgumentEscaper.EscapeArgArray(scriptArguments);
+                    scriptArguments = new[] { comSpec, "/S", "/C", ArgumentEscaper.EscapeArgStringForCmd(cmdArgs) };
                 }
             }
             else
             {
                 // Special-case a script name that, perhaps with added .sh, matches an existing file.
-                var surroundWithQuotes = false;
                 var scriptCandidate = scriptArguments[0];
                 if (scriptCandidate.StartsWith("\"", StringComparison.Ordinal) &&
                     scriptCandidate.EndsWith("\"", StringComparison.Ordinal))
                 {
                     // Strip surrounding quotes; they were required in project.json to keep the script name
                     // together but confuse File.Exists() e.g. "My Script", lacking ./ prefix and .sh suffix.
-                    surroundWithQuotes = true;
                     scriptCandidate = scriptCandidate.Substring(1, scriptCandidate.Length - 2);
                 }
 
@@ -76,19 +71,15 @@ namespace Microsoft.DotNet.Cli.Utils
                     // scriptCandidate may be a path relative to the project root. If so, likely will not be found
                     // in the $PATH; add ./ to let bash know where to look.
                     var prefix = Path.IsPathRooted(scriptCandidate) ? string.Empty : "./";
-                    var quote = surroundWithQuotes ? "\"" : string.Empty;
-                    scriptArguments[0] = $"{ quote }{ prefix }{ scriptCandidate }{ quote }";
+                    scriptArguments[0] = $"{prefix}{scriptCandidate}";
                 }
 
                 // Always use /usr/bin/env bash -c in order to support redirection and so on; similar to Windows case.
                 // Unlike Windows, must escape quotation marks within the newly-quoted string.
-                scriptArguments = new[] { "/usr/bin/env", "bash", "-c", "\"" }
-                    .Concat(scriptArguments.Select(argument => argument.Replace("\"", "\\\"")))
-                    .Concat(new[] { "\"" })
-                    .ToArray();
+                scriptArguments = new[] { "/usr/bin/env", "bash", "-c", ArgumentEscaper.EscapeArgArray(scriptArguments) };
             }
 
-            return Command.Create(scriptArguments.FirstOrDefault(), string.Join(" ", scriptArguments.Skip(1)))
+            return Command.Create(scriptArguments.FirstOrDefault(), scriptArguments.Skip(1).ToArray())
                 .WorkingDirectory(project.ProjectDirectory);
         }
         private static Func<string, string> WrapVariableDictionary(IDictionary<string, string> contextVariables)
