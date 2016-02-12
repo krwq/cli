@@ -1,21 +1,33 @@
+# General rules
+- No http links in any readme page (use https)
+- All installers signed
+
 # Readme pages
-[Github.io getting started](http://dotnet.github.io/getting-started/)
-[Repo landing page](https://github.com/dotnet/cli/blob/rel/1.0.0/README.md)
+[Getting Started Page](https://dotnet.github.io/getting-started/) - for customers
+[Repo landing page](https://github.com/dotnet/cli/blob/rel/1.0.0/README.md) - for contributors
 
-# Acquisition
-## Interactive
-This should be visible on every readme page
+# Interactive
+Interactive installations are driven by users who explicitly want to get access to dotnet CLI bits. Users reach these experiences through Web searches, marketing content, or links from other sites.
 
-| |Ubuntu 14.04 |Windows |Mac OS X |CentOS 7.1 |
-|------:|:------:|:------:|:------:|:------:|
-|**Installer**|[Download Debian Package](https://dotnetcli.blob.core.windows.net/dotnet/beta/Installers/Latest/dotnet-ubuntu-x64.latest.deb)|[MSI](https://dotnetcli.blob.core.windows.net/dotnet/beta/Installers/Latest/dotnet-win-x64.latest.exe)|[PKG](https://dotnetcli.blob.core.windows.net/dotnet/beta/Installers/Latest/dotnet-osx-x64.latest.pkg)|  |
-|**Binaries**|[TAR](https://dotnetcli.blob.core.windows.net/dotnet/beta/Binaries/Latest/dotnet-ubuntu-x64.latest.tar.gz)|[ZIP](https://dotnetcli.blob.core.windows.net/dotnet/beta/Binaries/Latest/dotnet-win-x64.latest.zip)|[TAR](https://dotnetcli.blob.core.windows.net/dotnet/beta/Binaries/Latest/dotnet-osx-x64.latest.tar.gz)|[TAR](https://dotnetcli.blob.core.windows.net/dotnet/beta/Binaries/Latest/dotnet-centos-x64.latest.tar.gz) |
-|**Docker**|[Docker](https://docs.docker.com/linux/)|[Docker](https://docs.docker.com/windows/)|[Docker](https://docs.docker.com/mac/)|[Docker](https://docs.docker.com/linux/)|
+## Getting Started Page
+http://dotnet.github.io/getting-started/
+* Installation targets: native installers
+* Source branch: rel/1.0.0
+* Linked builds: LKG ?? latest green build of rel/1.0.0;
 
-## Programmatic
-Blob of text which can be copy pasted to your command prompt or script.
-- Global installation
-- Local installation (i.e. part of the build)
+This is the main curated first-run experience for the dotnet CLI. The intent of the page is to help users "kick the tires" quickly and become familiar with what the platform offers. This should be the most stable and curated experience we can offer.
 
-# Github.io getting started
-Should contain step by step instructions for how to install and quick start with .NET.
+## Repo Landing Page
+https://github.com/dotnet/cli/readme.md
+* Installation targets: native installers
+* Source branch: rel/1.0.0
+* Linked builds: LKG ?? latest green build of rel/1.0.0;
+
+Folks coming to the repo should be aggressively redirected to the Getting Started Page. The Repo Landing Page should not be treated as a source of installers for most foThe Repo Landing Page should be used primarily by contributors to the CLI. The links on the CLI landing page should point to Getting Started Page
+
+Installation targets: 
+# Programatic
+## install.sh/install.ps1
+- Local installation (consumed by build scripts)
+- Global installation (consumed by users who like command line)
+## Chaining into other products [e.g. VS]
