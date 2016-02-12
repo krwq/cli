@@ -11,13 +11,11 @@
 https://aka.ms/dotnetcoregs
 * Installation targets: native installers & local installs (zips and tarballs)
 * Source branch: rel/1.0.0
-* Linked builds: LKG ?? latest green build of rel/1.0.0;
+* Linked builds: LKG ?? latest green build of rel/1.0.0
 * Debian feed: Release Nightly
 * Installation script links: Latest from rel/1.0.0
 
 This is the main curated first-run experience for the dotnet CLI. The intent of the page is to help users "kick the tires" quickly and become familiar with what the platform offers. This should be the most stable and curated experience we can offer.
-
-- Should include debian package feed (release nightly)
 
 ## Repo Landing Page
 https://github.com/dotnet/cli/readme.md
