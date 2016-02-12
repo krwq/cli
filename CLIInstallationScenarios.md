@@ -1,14 +1,15 @@
 # General rules
 - No http links in any readme page (use https)
 - All installers signed
+- All user facing materials should point to the getting started page
 
 # Readme pages
-[Getting Started Page](https://dotnet.github.io/getting-started/) - for customers
+[Getting Started Page](https://aka.ms/dotnetcoregs) - for customers
 [Repo landing page](https://github.com/dotnet/cli/blob/rel/1.0.0/README.md) - for contributors
 
 ## Getting Started Page
-http://dotnet.github.io/getting-started/
-* Installation targets: native installers
+https://aka.ms/dotnetcoregs
+* Installation targets: native installers & local installs (zips and tarballs)
 * Source branch: rel/1.0.0
 * Linked builds: LKG ?? latest green build of rel/1.0.0;
 * Debian feed: Release Nightly
@@ -22,19 +23,32 @@ This is the main curated first-run experience for the dotnet CLI. The intent of 
 https://github.com/dotnet/cli/readme.md
 * Installation targets: native installers and ZIPs
 * Source branch: rel/1.0.0
-* Linked builds: latest green build of rel/1.0.0;
+* URLs point to: latest green build of rel/1.0.0;
 
-Folks coming to the repo should be aggressively redirected to the Getting Started Page. The Repo Landing Page should not be treated as a source of installers.
+Download links on the landing page should be decreased in importance. First thing for "you want to get started" section should link to the getting started page on the marketing site. 
 
-The Repo Landing Page should be used primarily by contributors to the CLI. The links on the CLI landing page should point to the latest green builds of the active release branch. There should also be a separate page that points to the latest Dev build.
+The Repo Landing Page should be used primarily by contributors to the CLI. There should be a separate page that has instructions on how to install both the latest stable as well as latest development with proper warnings around it. 
 
-## Interactive installation
-Interactive installations are driven by users who explicitly want to get access to dotnet CLI bits. Users reach these experiences through Web searches, marketing content, or links from other sites.
+## Interactive installation (native installers)
+These installation experiences are the primary way new users are getting the bits. They are aimed towards users kicking the tires. They are found using (not not limited to) the following means:
+
+* Web searches
+* Marketing materials
+* Presentations
+* Documentation
+
+Principle: all user-facing materials should point to the Getting Started page as a means to get the thing. 
 
 ## Copy & paste installation script
 ### install.sh/install.ps1
 - Local installation (consumed by build scripts)
 - Global installation (consumed by users who like command line)
 
-## Integrating into other products [e.g. VS]
+## Docker 
+Docker images are used either as a base or as small development envs for trying out the bits. We should follow through the above principles with Docker. 
+
+## Acquiring through other products (VS, VS Code)
+TODO: acquire through VS (OOB)
+TODO: acquire through VS Code (extension) 
+
 
