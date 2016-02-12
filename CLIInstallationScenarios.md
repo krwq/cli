@@ -3,13 +3,13 @@
 - All installers signed
 - All user facing materials should point to the getting started page
 
-# Readme pages
+# Landing Pages
 [Getting Started Page](https://aka.ms/dotnetcoregs) - for customers
 [Repo landing page](https://github.com/dotnet/cli/blob/rel/1.0.0/README.md) - for contributors
 
 ## Getting Started Page
 https://aka.ms/dotnetcoregs
-* Installation targets: native installers & local installs (zips and tarballs)
+* Installation targets: native installers & "curl&run"
 * Source branch: rel/1.0.0
 * Linked builds: LKG ?? latest green build of rel/1.0.0
 * Debian feed: Release Nightly
@@ -19,7 +19,7 @@ This is the main curated first-run experience for the dotnet CLI. The intent of 
 
 ## Repo Landing Page
 https://github.com/dotnet/cli/readme.md
-* Installation targets: native installers and ZIPs
+* Installation targets: native installers & "curl&run" (should be obscured by getting started link: i.e. on the bottom of the page)
 * Source branch: rel/1.0.0
 * URLs point to: latest green build of rel/1.0.0;
 
@@ -35,12 +35,11 @@ These installation experiences are the primary way new users are getting the bit
 * Presentations
 * Documentation
 
-Principle: all user-facing materials should point to the Getting Started page as a means to get the thing. 
-
-## Copy & paste installation script
+## Curl & paste installation script
 ### install.sh/install.ps1
-- Local installation (consumed by build scripts)
-- Global installation (consumed by users who like command line)
+* Local installation (consumed by build scripts)
+* Global installation (consumed by users who like command line)
+* Copy&paste script: downloads and executes installation script
 
 ## Docker 
 Docker images are used either as a base or as small development envs for trying out the bits. We should follow through the above principles with Docker. 
