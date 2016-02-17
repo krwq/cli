@@ -1,9 +1,11 @@
-# General principles that apply to the installs
-- This doc is represnting ideal state and not the current state
-- Only HTTPS links are allowed in any online property 
-- All installers are signed properly 
+*This doc is representing ideal state and not the current state of things*
+*Some things are not implemented yet*
+
+# General principles that apply to the acquisition experience
+- Only HTTPS links are allowed in any online property
+- All installers are signed properly
 - All user facing materials point to the getting started page
-- The user needs extra effort to install the "bleeding edge" bits (nightly build)
+- The user needs extra effort to install the nightly build
 
 # Landing Pages
 [Getting Started Page](https://aka.ms/dotnetcoregs) - for customers
@@ -26,7 +28,7 @@ The repo landing page can be found on: https://github.com/dotnet/cli/readme.md
 * Source branch: rel/1.0.0
 * Links to builds: LKG ?? latest green build of rel/1.0.0 (build status)
 * The Repo Landing Page should be used primarily by contributors to the CLI
-* Only links to "how to install" but no instructions
+* Only links to "how to install" but no actual instructions or links
 * First thing for "you want to get started" section should link to the getting started page on the marketing site
 * Separate page that has instructions on how to install both the latest stable as well as latest development with proper warnings around it. The separate page is to really avoid the situation from people accidentally installing unstable bits (since SEO can drop them in the repo first). 
 
@@ -55,14 +57,16 @@ The native installers are:
 This approach will be used for the below scenarios:
 
 * Local installation (consumed by build scripts)
+  * **TODO:** where does it install it? how does user know what path to use?
 * Global installation (consumed by users who like command line)
+  * **TODO:** what path to install
 * Copy & paste script: downloads and executes installation script
 
 **TODO:** add actual commands for both Unix and Windows. 
 
 ## Docker
 * Link to docker hub page
-* Docker images are used either as a base or as small development envs for trying out the bits
+* Docker images are used either as a base or as small development environments for trying out the bits
 * Docker image should have stable bits
 * Should point to the "stable" tag
 
