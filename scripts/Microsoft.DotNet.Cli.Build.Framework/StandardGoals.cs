@@ -12,6 +12,7 @@ namespace Microsoft.DotNet.Cli.Build.Framework
             return self.UseTargets(new[]
             {
                 new BuildTarget("Default", "Standard Goals", new [] { "Prepare", "Compile", "Test", "Package", "Publish" }),
+                new BuildTarget("Dev", "Standard Goals", new [] { "Prepare", "Compile", "Package", "SetDryPublish" , "Publish" }),
                 new BuildTarget("Prepare", "Standard Goals"),
                 new BuildTarget("Compile", "Standard Goals"),
                 new BuildTarget("Test", "Standard Goals"),

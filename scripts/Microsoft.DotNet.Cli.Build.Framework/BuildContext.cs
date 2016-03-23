@@ -44,6 +44,19 @@ namespace Microsoft.DotNet.Cli.Build.Framework
         }
 
         public T Get<T>(string name) => (T)this[name];
+        
+        public T Get<T>(string name, T defaultValue)
+        {
+            object ret;
+            if (Properties.TryGetValue(name, out ret))
+            {
+                return (T)ret;
+            }
+            else
+            {
+                return defaultValue;
+            }
+        }
 
         public BuildTargetResult RunTarget(string name) => RunTarget(name, force: false);
 

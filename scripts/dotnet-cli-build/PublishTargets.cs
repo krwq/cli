@@ -20,7 +20,13 @@ namespace Microsoft.DotNet.Cli.Build
 
         private static string NuGetVersion { get; set; }
 
-
+        [Target]
+        public static BuildTargetResult SetDryPublish(BuildTargetContext c)
+        {
+            c.BuildContext["DryPublish"] = true;
+            return c.Success();
+        }
+        
         [Target]
         public static BuildTargetResult InitPublish(BuildTargetContext c)
         {
@@ -35,9 +41,9 @@ namespace Microsoft.DotNet.Cli.Build
         }
 
         [Target(nameof(PrepareTargets.Init),
-        nameof(PublishTargets.InitPublish),
-        nameof(PublishTargets.PublishArtifacts),
-        nameof(PublishTargets.TriggerDockerHubBuilds))]
+            nameof(PublishTargets.InitPublish),
+            nameof(PublishTargets.PublishArtifacts),
+            nameof(PublishTargets.TriggerDockerHubBuilds))]
         [Environment("PUBLISH_TO_AZURE_BLOB", "1", "true")] // This is set by CI systems
         public static BuildTargetResult Publish(BuildTargetContext c)
         {
@@ -63,8 +69,8 @@ namespace Microsoft.DotNet.Cli.Build
             var latestVersionBadgeBlob = $"{Channel}/Binaries/Latest/{Path.GetFileName(versionBadge)}";
             var versionBadgeBlob = $"{Channel}/Binaries/{Version}/{Path.GetFileName(versionBadge)}";
 
-            PublishFileAzure(versionBadgeBlob, versionBadge);
-            PublishFileAzure(latestVersionBadgeBlob, versionBadge);
+            PublishFileAzure(c, versionBadgeBlob, versionBadge);
+            PublishFileAzure(c, latestVersionBadgeBlob, versionBadge);
             return c.Success();
         }
 
@@ -77,8 +83,8 @@ namespace Microsoft.DotNet.Cli.Build
             var latestInstallerFile = installerFile.Replace(Version, "latest");
             var latestInstallerFileBlob = $"{Channel}/Installers/Latest/{Path.GetFileName(latestInstallerFile)}";
 
-            PublishFileAzure(installerFileBlob, installerFile);
-            PublishFileAzure(latestInstallerFileBlob, installerFile);
+            PublishFileAzure(c, installerFileBlob, installerFile);
+            PublishFileAzure(c, latestInstallerFileBlob, installerFile);
             return c.Success();
         }
 
@@ -89,7 +95,7 @@ namespace Microsoft.DotNet.Cli.Build
             var latestVersionBlob = $"{Channel}/dnvm/latest.{osname}.{CurrentArchitecture.Current}.version";
             var latestVersionFile = Path.Combine(Dirs.Stage2, "sdk", NuGetVersion, ".version");
 
-            PublishFileAzure(latestVersionBlob, latestVersionFile);
+            PublishFileAzure(c, latestVersionBlob, latestVersionFile);
             return c.Success();
         }
 
@@ -220,8 +226,8 @@ namespace Microsoft.DotNet.Cli.Build
             var latestCompressedFile = compressedFile.Replace(Version, "latest");
             var latestCompressedFileBlob = $"{Channel}/Binaries/Latest/{Path.GetFileName(latestCompressedFile)}";
 
-            PublishFileAzure(compressedFileBlob, compressedFile);
-            PublishFileAzure(latestCompressedFileBlob, compressedFile);
+            PublishFileAzure(c, compressedFileBlob, compressedFile);
+            PublishFileAzure(c, latestCompressedFileBlob, compressedFile);
             return c.Success();
         }
 
@@ -233,13 +239,18 @@ namespace Microsoft.DotNet.Cli.Build
             var latestCompressedFile = compressedFile.Replace(Version, "latest");
             var latestCompressedFileBlob = $"{Channel}/Binaries/Latest/{Path.GetFileName(latestCompressedFile)}";
 
-            PublishFileAzure(compressedFileBlob, compressedFile);
-            PublishFileAzure(latestCompressedFileBlob, compressedFile);
+            PublishFileAzure(c, compressedFileBlob, compressedFile);
+            PublishFileAzure(c, latestCompressedFileBlob, compressedFile);
             return c.Success();
         }
 
         private static BuildTargetResult PublishFile(BuildTargetContext c, string file)
         {
+            if (c.BuildContext.Get<bool>("DryPublish", false))
+            {
+                return c.Success();
+            }
+            
             var env = PackageTargets.GetCommonEnvVars(c);
             Cmd("powershell", "-NoProfile", "-NoLogo",
                 Path.Combine(Dirs.RepoRoot, "scripts", "publish", "publish.ps1"), file)
@@ -249,8 +260,14 @@ namespace Microsoft.DotNet.Cli.Build
             return c.Success();
         }
 
-        private static void PublishFileAzure(string blob, string file)
+        private static void PublishFileAzure(BuildTargetContext c, string blob, string file)
         {
+            if (c.BuildContext.Get<bool>("DryPublish", false))
+            {
+                c.Info($"Would publish file {file} to {blob}.");
+                return;
+            }
+            
             CloudBlockBlob blockBlob = BlobContainer.GetBlockBlobReference(blob);
             blockBlob.UploadFromFileAsync(file, FileMode.Open).Wait();
 
