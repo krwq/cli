@@ -14,15 +14,33 @@ namespace Microsoft.DotNet.Tests.EndToEnd
 {
     public class InstallScriptsTests : TestBase
     {
-        public static void Main()
+        private static string _shell;
+        
+        static InstallScriptsTests()
         {
-            Console.WriteLine("Dummy Entrypoint.");
+            _shell = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "powershell" : "bash";
         }
-
+        
         [Fact]
         public void TestDotnetBuild()
         {
-            //
+            Console.WriteLine($"Default shell: {_shell}");
+        }
+        
+        private static void Install(string additionalArguments)
+        {
+            var arguments = $"{additionalArguments}";
+            var process = Process.Start(_shell, arguments);
+
+            if (!process.WaitForExit(5 * 60 * 1000))
+            {
+                throw new InvalidOperationException($"Failed to wait for the installation operation to complete.");
+            }
+
+            else if (0 != process.ExitCode)
+            {
+                throw new InvalidOperationException($"The installation operation failed.");
+            }
         }
     }
 }
