@@ -10,21 +10,32 @@ using Microsoft.Extensions.PlatformAbstractions;
 using Xunit;
 using System.Diagnostics;
 
-namespace Microsoft.DotNet.Tests.EndToEnd
+namespace Microsoft.DotNet.Tests.InstallScripts
 {
     public class InstallScriptsTests : TestBase
     {
         private static string _shell;
+        private static string _installScriptPath;
         
         static InstallScriptsTests()
         {
-            _shell = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "powershell" : "bash";
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                _shell = "powershell";
+                _installScriptPath = Path.Combine(RepoRoot, "scripts", "obtain", "install.ps1");
+            }
+            else
+            {
+                _shell = "bash";
+                _installScriptPath = Path.Combine(RepoRoot, "scripts", "obtain", "install.sh");
+            }
         }
         
         [Fact]
         public void TestDotnetBuild()
         {
             Console.WriteLine($"Default shell: {_shell}");
+            Console.WriteLine($"Script to run: {_installScriptPath}");
         }
         
         private static void Install(string additionalArguments)
