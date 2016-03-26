@@ -8,13 +8,17 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpOverrides;
 using System.Threading.Tasks;
 using System;
+using System.Text;
+using Microsoft.Extensions.Configuration;
 
 namespace Test
 {
     public class Startup
     {
+        public string Path;
         public void Configure(IApplicationBuilder app)
         {
+            //app.Properties.
             app.UseForwardedHeaders(new ForwardedHeadersOptions
             {
                 ForwardedHeaders = ForwardedHeaders.All
@@ -22,7 +26,16 @@ namespace Test
 
             app.Run(context =>
             {
-                return context.Response.WriteAsync("Hello World!");
+                Path = context.Request.Path;
+                //context.Response.ContentType = "application/octet-stream";
+                //context.Response.SendFileAsync()
+                return context.Response.SendFileAsync("NuGet.config");
+                /*StringBuilder sb = new StringBuilder();
+                foreach (var file in Directory.EnumerateFiles("."))
+                {
+                    sb.AppendLine(file);
+                }
+                return context.Response.WriteAsync($"Hello World! {context.Request.Path}\r\n{sb.ToString()}");*/
             });
         }
     }
@@ -35,17 +48,19 @@ namespace Test
             hostBuilder.UseServer("Microsoft.AspNetCore.Server.Kestrel");
             hostBuilder.UseContentRoot(Directory.GetCurrentDirectory());
             hostBuilder.UseDefaultConfiguration(args);
+            var cb = new ConfigurationBuilder();
+            hostBuilder.UseConfiguration(cb.Build());
             hostBuilder.UseStartup<Startup>();
+            hostBuilder.UseUrls("https://localhost:9999");
 
             using (IWebHost host = hostBuilder.Build())
             {
                 host.Start();
-                Console.WriteLine("server started. press a key to stop");
+                //var test = (Startup)host.Services.GetService(typeof(Startup));
+                Console.WriteLine("server started. press ENTER to stop");
                 Console.ReadLine();
+                //Console.WriteLine($"Last visited path is {test.Path}");
             }
-
-            Console.WriteLine("server stopped. press a key to close app");
-            Console.ReadLine();
         }
     }
 }
