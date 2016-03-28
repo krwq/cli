@@ -11,14 +11,18 @@ using System;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
+using System.Net;
+using System.Net.Sockets;
 
 namespace Test
 {
-    public class TestServer
+    public class TestServer : IDisposable
     {
         private Dictionary<string, RequestDelegate> _pathsMappings;
+        private IWebHost _host;
 
         public RequestDelegate PathNotFoundHandler { get; set; }
+        public string Url { get; private set; }
 
         public TestServer()
         {
@@ -50,15 +54,11 @@ namespace Test
 
         private Task PathHandlerOrDefault(HttpContext context)
         {
-            //context.Response.ContentType = "application/octet-stream";
-            //context.Response.SendFileAsync()
-            //return context.Response.SendFileAsync("NuGet.config");
-            /*StringBuilder sb = new StringBuilder();
-            foreach (var file in Directory.EnumerateFiles("."))
+            if (_pathsMappings == null)
             {
-                sb.AppendLine(file);
+                return MappingsNotSetHandler(context);
             }
-            return context.Response.WriteAsync($"Hello World! {context.Request.Path}\r\n{sb.ToString()}");*/
+
             return (this[context.Request.Path] ?? PathNotFoundHandler)(context);
         }
 
@@ -76,6 +76,12 @@ namespace Test
             return context => context.Response.WriteAsync(text);
         }
 
+        private Task MappingsNotSetHandler(HttpContext context)
+        {
+            context.Response.StatusCode = 500;
+            return context.Response.WriteAsync($"500 Server path mappings are set to null!");
+        }
+
         public void Configure(IApplicationBuilder app)
         {
             app.ServerFeatures.Set<TestServer>(this);
@@ -83,7 +89,67 @@ namespace Test
             {
                 ForwardedHeaders = ForwardedHeaders.All
             });
+
             app.Run(PathHandlerOrDefault);
+        }
+
+        public static TestServer Create()
+        {
+            for (int creationAttempt = 0; creationAttempt < 10; creationAttempt++)
+            {
+                IWebHost host = null;
+                try
+                {
+                    TestServer ret = null;
+
+                    var hostBuilder = new WebHostBuilder();
+                    hostBuilder.UseServer("Microsoft.AspNetCore.Server.Kestrel");
+                    hostBuilder.UseContentRoot(Directory.GetCurrentDirectory());
+                    hostBuilder.UseDefaultConfiguration();
+                    var cb = new ConfigurationBuilder();
+                    hostBuilder.UseConfiguration(cb.Build());
+                    hostBuilder.UseStartup<TestServer>();
+                    string url = $"https://localhost:{GetFreePort()}";
+                    hostBuilder.UseUrls(url);
+
+                    host = hostBuilder.Build();
+                    host.Start();
+                    ret = host.ServerFeatures.Get<TestServer>();
+                    ret._host = host;
+                    ret.Url = url;
+
+                    return ret;
+                }
+                catch { host?.Dispose(); /* choke all exceptions and retry */ }
+            }
+
+            throw new Exception("Could not create a server.");
+        }
+
+        public static TestServer Create(Dictionary<string, RequestDelegate> mappings)
+        {
+            TestServer ret = Create();
+            foreach (var mapping in mappings)
+            {
+                ret[mapping.Key] = mapping.Value;
+            }
+
+            return ret;
+        }
+
+        public void Dispose()
+        {
+            _host?.Dispose();
+            _host = null;
+        }
+
+        private static int GetFreePort()
+        {
+            TcpListener l = new TcpListener(IPAddress.Loopback, 0);
+            l.Start();
+            int port = ((IPEndPoint)l.LocalEndpoint).Port;
+            l.Stop();
+            return port;
         }
     }
 
@@ -91,7 +157,15 @@ namespace Test
     {
         public static void Main(string[] args)
         {
-            var hostBuilder = new WebHostBuilder();
+            using (TestServer s = TestServer.Create())
+            {
+                s["/dupa"] = TestServer.SendText("hello Seattle");
+                s["/nuget"] = TestServer.SendFile("NuGet.Config");
+                Console.WriteLine($"Created server {s.Url}");
+                Console.WriteLine("press ENTER to stop the server");
+                Console.ReadLine();
+            }
+            /*var hostBuilder = new WebHostBuilder();
             hostBuilder.UseServer("Microsoft.AspNetCore.Server.Kestrel");
             hostBuilder.UseContentRoot(Directory.GetCurrentDirectory());
             hostBuilder.UseDefaultConfiguration(args);
@@ -110,7 +184,7 @@ namespace Test
                 Console.WriteLine("server changed. press ENTER to stop");
                 Console.ReadLine();
                 //Console.WriteLine($"Last visited path is {test.Path}");
-            }
+            }*/
         }
     }
 }
