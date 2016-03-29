@@ -16,9 +16,42 @@ using System.Net.Sockets;
 
 namespace Test
 {
+    public class Counter<T>
+    {
+        public Dictionary<T, int> Counts { get; private set; }
+
+        public Counter()
+        {
+            Counts = new Dictionary<T, int>();
+        }
+
+        public int this[T key]
+        {
+            get
+            {
+                int ret;
+                if (Counts.TryGetValue(key, out ret))
+                {
+                    return ret;
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+        }
+
+        public void Increment(T key)
+        {
+            Counts[key] = this[key] + 1;
+        }
+    }
+
     public class TestServer : IDisposable
     {
         private Dictionary<string, RequestDelegate> _pathsMappings;
+        public Counter<string> RequestCounts { get; private set; }
+        public int PageNotFoundHits { get; private set; }
         private IWebHost _host;
 
         public RequestDelegate PathNotFoundHandler { get; set; }
@@ -27,6 +60,7 @@ namespace Test
         public TestServer()
         {
             _pathsMappings = new Dictionary<string, RequestDelegate>();
+            RequestCounts = new Counter<string>();
             PathNotFoundHandler = DefaultPathNotFoundHandler;
         }
 
@@ -34,15 +68,13 @@ namespace Test
         {
             get
             {
-                path = path.ToLower();
                 RequestDelegate requestHandler;
-                _pathsMappings.TryGetValue(path, out requestHandler);
+                _pathsMappings.TryGetValue(NormalizeServerPath(path), out requestHandler);
                 return requestHandler;
             }
             set
             {
-                path = path.ToLower();
-                _pathsMappings[path] = value;
+                _pathsMappings[NormalizeServerPath(path)] = value;
             }
         }
 
@@ -59,7 +91,19 @@ namespace Test
                 return MappingsNotSetHandler(context);
             }
 
-            return (this[context.Request.Path] ?? PathNotFoundHandler)(context);
+            string path = NormalizeServerPath(context.Request.Path);
+            RequestCounts.Increment(path);
+
+            RequestDelegate handler;
+            if (_pathsMappings.TryGetValue(path, out handler))
+            {
+                return handler(context);
+            }
+            else
+            {
+                PageNotFoundHits++;
+                return PathNotFoundHandler(context);
+            }
         }
 
         public static RequestDelegate SendFile(string filePath)
@@ -93,8 +137,20 @@ namespace Test
             app.Run(PathHandlerOrDefault);
         }
 
+        private static string NormalizeServerPath(string path)
+        {
+            path = path.ToLower();
+            if (!path.StartsWith("/"))
+            {
+                path = "/" + path;
+            }
+
+            return path;
+        }
+
         public static TestServer Create()
         {
+            Exception lastException = null;
             for (int creationAttempt = 0; creationAttempt < 10; creationAttempt++)
             {
                 IWebHost host = null;
@@ -109,7 +165,7 @@ namespace Test
                     var cb = new ConfigurationBuilder();
                     hostBuilder.UseConfiguration(cb.Build());
                     hostBuilder.UseStartup<TestServer>();
-                    string url = $"https://localhost:{GetFreePort()}";
+                    string url = $"http://localhost:{GetFreePort()}";
                     hostBuilder.UseUrls(url);
 
                     host = hostBuilder.Build();
@@ -120,10 +176,10 @@ namespace Test
 
                     return ret;
                 }
-                catch { host?.Dispose(); /* choke all exceptions and retry */ }
+                catch (Exception e) { lastException = e; host?.Dispose(); /* choke all exceptions and retry */ }
             }
 
-            throw new Exception("Could not create a server.");
+            throw lastException;
         }
 
         public static TestServer Create(Dictionary<string, RequestDelegate> mappings)
@@ -159,32 +215,19 @@ namespace Test
         {
             using (TestServer s = TestServer.Create())
             {
+                s[""] = TestServer.SendText("<html><head/><body>Welcome on my server</body></html>");
                 s["/dupa"] = TestServer.SendText("hello Seattle");
                 s["/nuget"] = TestServer.SendFile("NuGet.Config");
+
                 Console.WriteLine($"Created server {s.Url}");
                 Console.WriteLine("press ENTER to stop the server");
                 Console.ReadLine();
+                foreach (var reqCount in s.RequestCounts.Counts)
+                {
+                    Console.WriteLine($"hit {reqCount.Key} {reqCount.Value} time(s)");
+                }
+                Console.WriteLine($"Number of 404: {s.PageNotFoundHits}");
             }
-            /*var hostBuilder = new WebHostBuilder();
-            hostBuilder.UseServer("Microsoft.AspNetCore.Server.Kestrel");
-            hostBuilder.UseContentRoot(Directory.GetCurrentDirectory());
-            hostBuilder.UseDefaultConfiguration(args);
-            var cb = new ConfigurationBuilder();
-            hostBuilder.UseConfiguration(cb.Build());
-            hostBuilder.UseStartup<TestServer>();
-            hostBuilder.UseUrls("https://localhost:9999");
-
-            using (IWebHost host = hostBuilder.Build())
-            {
-                host.Start();
-
-                TestServer server = host.ServerFeatures.Get<TestServer>();
-                server["/dupa"] = TestServer.SendText("hello Seattle");
-                server["/nuget"] = TestServer.SendFile("NuGet.Config");
-                Console.WriteLine("server changed. press ENTER to stop");
-                Console.ReadLine();
-                //Console.WriteLine($"Last visited path is {test.Path}");
-            }*/
         }
     }
 }
