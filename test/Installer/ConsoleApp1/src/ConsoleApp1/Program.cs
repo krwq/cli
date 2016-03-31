@@ -151,6 +151,7 @@ namespace Test
         public static TestServer Create()
         {
             Exception lastException = null;
+            // Try few times just in case different process takes it in between the call
             for (int creationAttempt = 0; creationAttempt < 10; creationAttempt++)
             {
                 IWebHost host = null;
@@ -165,18 +166,27 @@ namespace Test
                     var cb = new ConfigurationBuilder();
                     hostBuilder.UseConfiguration(cb.Build());
                     hostBuilder.UseStartup<TestServer>();
-                    string url = $"http://localhost:{GetFreePort()}";
-                    hostBuilder.UseUrls(url);
+                    string url;
+                    lock (_freePortLock)
+                    {
+                        url = $"http://localhost:{GetFreePort()}";
+                        hostBuilder.UseUrls(url);
 
-                    host = hostBuilder.Build();
-                    host.Start();
+                        host = hostBuilder.Build();
+                        host.Start();
+                    }
+
                     ret = host.ServerFeatures.Get<TestServer>();
                     ret._host = host;
                     ret.Url = url;
 
                     return ret;
                 }
-                catch (Exception e) { lastException = e; host?.Dispose(); /* choke all exceptions and retry */ }
+                catch (Exception e)
+                {
+                    lastException = e;
+                    host?.Dispose();
+                }
             }
 
             throw lastException;
@@ -199,6 +209,7 @@ namespace Test
             _host = null;
         }
 
+        private static object _freePortLock = new object();
         private static int GetFreePort()
         {
             TcpListener l = new TcpListener(IPAddress.Loopback, 0);
