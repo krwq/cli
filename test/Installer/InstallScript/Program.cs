@@ -88,6 +88,14 @@ namespace Microsoft.DotNet.InstallScripts.Tests
             return stdout;
         }
         
+        private static Stream CreateZipWithContent(Dictionary<string, string> pathToContent)
+        {
+            MemoryStream ret = new MemoryStream();
+            
+            
+            return ret;
+        }
+        
         [Fact]
         public void InstallScriptExists()
         {
