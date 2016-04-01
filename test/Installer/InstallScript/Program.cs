@@ -57,16 +57,16 @@ namespace Microsoft.DotNet.InstallScripts.Tests
         
         private Process InstallEx(string additionalArguments)
         {
-            var arguments = $"-File \"{_installScriptPath}\" -Verbose {additionalArguments}";
+            var arguments = $"-File \"{_installScriptPath}\" {additionalArguments}";
             Process ret = new Process();
             ret.StartInfo.FileName = _shell;
             ret.StartInfo.Arguments = arguments;
             ret.StartInfo.UseShellExecute = false;
             
-            return ret;;
+            return ret;
         }
         
-        private void Install(string additionalArguments)
+        private string Install(string additionalArguments)
         {
             var process = InstallEx(additionalArguments);
             process.StartInfo.RedirectStandardOutput = true;
@@ -77,12 +77,15 @@ namespace Microsoft.DotNet.InstallScripts.Tests
             bool finishedGracefully = process.WaitForExit(10 * 1000);
             
             output.WriteLine("Process stdout:");
-            output.WriteLine(process.StandardOutput.ReadToEnd());
+            string stdout = process.StandardOutput.ReadToEnd();
+            output.WriteLine(stdout);
             output.WriteLine("Process stderr:");
             output.WriteLine(process.StandardError.ReadToEnd());
             
             Assert.True(finishedGracefully, "Failed to wait for the installation operation to complete.");
             Assert.Equal(0, process.ExitCode);
+            
+            return stdout;
         }
         
         [Fact]
@@ -92,19 +95,26 @@ namespace Microsoft.DotNet.InstallScripts.Tests
         }
         
         [Fact]
-        public void Test()
+        public void DryRunDisplaysLinkWithDefaultChannel()
         {
             using (TestServer s = TestServer.Create())
             {
                 string versionFile = "beta/dnvm/latest.win.x64.version";
-                s[versionFile] = TestServer.SendText("123\r\n1.2.3");
-                Console.WriteLine($"Server: {s.Url}. press enter");
-                Console.ReadLine();
-                //TestServer.SendFile("NuGet.Config");
-                Install($"-DryRun -AzureFeed {s.Url}");
+                string version = "1.2.3";
+                s[versionFile] = TestServer.SendText($"abc\r\n{version}");
+                
+                Console.WriteLine($"Url: {s.Url}");
+                //Console.WriteLine("PRESS ENTER!!!!!");
+                //Console.ReadLine();
+                
+                string stdout = Install($"-DryRun -AzureFeed {s.Url} -Architecture x64");
+                Assert.True(stdout.Contains($"{s.Url}/beta/Binaries/{version}/dotnet-dev-win-x64.{version}.zip"));
+                //foreach (var kp in s.RequestCounts.Counter.Data)
+                //{
+                //    Console.WriteLine($"   {kp.Key} -> {kp.Value}");
+                //}
                 Assert.Equal(1, s.RequestCounts[versionFile]);
                 Assert.Equal(0, s.PageNotFoundHits);
-                Assert.True(false);
             }
         }
     }

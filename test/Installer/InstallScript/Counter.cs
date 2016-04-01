@@ -8,19 +8,19 @@ namespace Microsoft.DotNet.InstallScripts.Tests
 {
     public class Counter<T>
     {
-        public Dictionary<T, int> Counts { get; private set; }
-
+        public Dictionary<T, int> Data { get; private set; }
+        
         public Counter()
         {
-            Counts = new Dictionary<T, int>();
+            Data = new Dictionary<T, int>();
         }
-
+        
         public int this[T key]
         {
             get
             {
                 int ret;
-                if (Counts.TryGetValue(key, out ret))
+                if (Data.TryGetValue(key, out ret))
                 {
                     return ret;
                 }
@@ -33,7 +33,7 @@ namespace Microsoft.DotNet.InstallScripts.Tests
 
         public void Increment(T key)
         {
-            Counts[key] = this[key] + 1;
+            Data[key] = this[key] + 1;
         }
     }
 }

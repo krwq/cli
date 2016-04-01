@@ -19,7 +19,7 @@ namespace Microsoft.DotNet.InstallScripts.Tests
     public class TestServer : IDisposable
     {
         private Dictionary<string, RequestDelegate> _pathsMappings;
-        public Counter<string> RequestCounts { get; private set; }
+        private Counter<string> _requestCounts;
         public int PageNotFoundHits { get; private set; }
         private IWebHost _host;
 
@@ -29,7 +29,8 @@ namespace Microsoft.DotNet.InstallScripts.Tests
         public TestServer()
         {
             _pathsMappings = new Dictionary<string, RequestDelegate>();
-            RequestCounts = new Counter<string>();
+            _requestCounts = new Counter<string>();
+            RequestCounts = new RequestCountsNormalizer(_requestCounts);
             PathNotFoundHandler = DefaultPathNotFoundHandler;
         }
 
@@ -46,6 +47,8 @@ namespace Microsoft.DotNet.InstallScripts.Tests
                 _pathsMappings[NormalizeServerPath(path)] = value;
             }
         }
+        
+        public RequestCountsNormalizer RequestCounts { get; private set; }
 
         public Task DefaultPathNotFoundHandler(HttpContext context)
         {
@@ -53,6 +56,21 @@ namespace Microsoft.DotNet.InstallScripts.Tests
             return context.Response.WriteAsync($"404 Path {context.Request.Path} not found!");
         }
 
+        private RequestDelegate ExceptionPrintingHandlerWrapper(RequestDelegate other)
+        {
+            return async (context) => {
+                try
+                {
+                    await other(context);
+                }
+                catch (Exception e)
+                {
+                    context.Response.StatusCode = 500;
+                    await SendText(e.ToString())(context);
+                }
+            };
+        }
+        
         private Task PathHandlerOrDefault(HttpContext context)
         {
             if (_pathsMappings == null)
@@ -61,7 +79,7 @@ namespace Microsoft.DotNet.InstallScripts.Tests
             }
 
             string path = NormalizeServerPath(context.Request.Path);
-            RequestCounts.Increment(path);
+            _requestCounts.Increment(path);
 
             RequestDelegate handler;
             if (_pathsMappings.TryGetValue(path, out handler))
@@ -75,12 +93,21 @@ namespace Microsoft.DotNet.InstallScripts.Tests
             }
         }
 
-        public static RequestDelegate SendFile(string filePath)
+        public static RequestDelegate SendFile(string filePath, string contentType = "application/octet-stream")
         {
             return (context) =>
             {
-                context.Response.ContentType = "application/octet-stream";
+                context.Response.ContentType = contentType;
                 return context.Response.SendFileAsync(filePath);
+            };
+        }
+        
+        public static RequestDelegate SendStream(Stream stream, string contentType = "application/octet-stream")
+        {
+            return (context) =>
+            {
+                context.Response.ContentType = contentType;
+                return stream.CopyToAsync(context.Response.Body);
             };
         }
 
@@ -103,10 +130,10 @@ namespace Microsoft.DotNet.InstallScripts.Tests
                 ForwardedHeaders = ForwardedHeaders.All
             });
 
-            app.Run(PathHandlerOrDefault);
+            app.Run(ExceptionPrintingHandlerWrapper(PathHandlerOrDefault));
         }
 
-        private static string NormalizeServerPath(string path)
+        public static string NormalizeServerPath(string path)
         {
             path = path.ToLower();
             if (!path.StartsWith("/"))
@@ -186,6 +213,24 @@ namespace Microsoft.DotNet.InstallScripts.Tests
             int port = ((IPEndPoint)l.LocalEndpoint).Port;
             l.Stop();
             return port;
+        }
+        
+        public class RequestCountsNormalizer
+        {
+            public Counter<string> Counter { get; private set; }
+            
+            public RequestCountsNormalizer(Counter<string> counter)
+            {
+                Counter = counter;
+            }
+            
+            public int this[string path]
+            {
+                get
+                {
+                    return Counter[TestServer.NormalizeServerPath(path)];
+                }
+            }
         }
     }
 }
