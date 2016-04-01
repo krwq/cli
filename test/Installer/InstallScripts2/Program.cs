@@ -220,9 +220,10 @@ namespace Test
         }
     }
 
-    public class Program
+    public class InstallScriptsTests : TestBase
     {
-        public static void Main(string[] args)
+        [Fact]
+        public void Test()
         {
             using (TestServer s = TestServer.Create())
             {
