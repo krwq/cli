@@ -1,5 +1,5 @@
-﻿// Copyright (c) .NET Foundation. All rights reserved.
-// Licensed under the Apache License, Version 2.0. See License.txt in the project root for license information.
+﻿// Copyright (c) .NET Foundation and contributors. All rights reserved.
+// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System.IO;
 using Microsoft.AspNetCore.Hosting;
@@ -14,39 +14,8 @@ using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 
-namespace Test
+namespace Microsoft.DotNet.InstallScripts.Tests
 {
-    public class Counter<T>
-    {
-        public Dictionary<T, int> Counts { get; private set; }
-
-        public Counter()
-        {
-            Counts = new Dictionary<T, int>();
-        }
-
-        public int this[T key]
-        {
-            get
-            {
-                int ret;
-                if (Counts.TryGetValue(key, out ret))
-                {
-                    return ret;
-                }
-                else
-                {
-                    return 0;
-                }
-            }
-        }
-
-        public void Increment(T key)
-        {
-            Counts[key] = this[key] + 1;
-        }
-    }
-
     public class TestServer : IDisposable
     {
         private Dictionary<string, RequestDelegate> _pathsMappings;
@@ -217,29 +186,6 @@ namespace Test
             int port = ((IPEndPoint)l.LocalEndpoint).Port;
             l.Stop();
             return port;
-        }
-    }
-
-    public class InstallScriptsTests : TestBase
-    {
-        [Fact]
-        public void Test()
-        {
-            using (TestServer s = TestServer.Create())
-            {
-                s[""] = TestServer.SendText("<html><head/><body>Welcome on my server</body></html>");
-                s["/dupa"] = TestServer.SendText("hello Seattle");
-                s["/nuget"] = TestServer.SendFile("NuGet.Config");
-
-                Console.WriteLine($"Created server {s.Url}");
-                Console.WriteLine("press ENTER to stop the server");
-                Console.ReadLine();
-                foreach (var reqCount in s.RequestCounts.Counts)
-                {
-                    Console.WriteLine($"hit {reqCount.Key} {reqCount.Value} time(s)");
-                }
-                Console.WriteLine($"Number of 404: {s.PageNotFoundHits}");
-            }
         }
     }
 }
