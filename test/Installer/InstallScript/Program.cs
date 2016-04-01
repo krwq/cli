@@ -2,6 +2,7 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.IO.Compression;
@@ -92,7 +93,20 @@ namespace Microsoft.DotNet.InstallScripts.Tests
         {
             MemoryStream ret = new MemoryStream();
             
+            using (var zip = new ZipArchive(ret, ZipArchiveMode.Create, leaveOpen: true))
+            {
+                foreach (var kp in pathToContent)
+                {
+                    var entry = zip.CreateEntry(kp.Key);
+                    
+                    using (var fileContent = entry.Open())
+                    {
+                        fileContent.WriteAllText(kp.Value);
+                    }
+                }
+            }
             
+            ret.Position = 0;
             return ret;
         }
         
@@ -110,10 +124,15 @@ namespace Microsoft.DotNet.InstallScripts.Tests
                 string versionFile = "beta/dnvm/latest.win.x64.version";
                 string version = "1.2.3";
                 s[versionFile] = TestServer.SendText($"abc\r\n{version}");
+                s["test.zip"] = TestServer.SendStream(CreateZipWithContent(new Dictionary<string, string>()
+                    {
+                        { "test.txt", "example content" },
+                        { "a/b/c/test.txt", "wow this actually works" }
+                    }));
                 
                 Console.WriteLine($"Url: {s.Url}");
-                //Console.WriteLine("PRESS ENTER!!!!!");
-                //Console.ReadLine();
+                Console.WriteLine("PRESS ENTER!!!!!");
+                Console.ReadLine();
                 
                 string stdout = Install($"-DryRun -AzureFeed {s.Url} -Architecture x64");
                 Assert.True(stdout.Contains($"{s.Url}/beta/Binaries/{version}/dotnet-dev-win-x64.{version}.zip"));
