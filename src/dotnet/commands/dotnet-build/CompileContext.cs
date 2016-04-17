@@ -502,17 +502,33 @@ namespace Microsoft.DotNet.Tools.Build
 
         private void MakeRunnable()
         {
-            var runtimeContext = _rootProject.ProjectFile.HasRuntimeOutput(_args.ConfigValue) ?
-                _rootProject.CreateRuntimeContext(_args.GetRuntimes()) :
-                _rootProject;
+            List<ProjectContext> runtimeContexts = _rootProject.ProjectFile.HasRuntimeOutput(_args.ConfigValue) ?
+                ProjectContext.CreateContextForEachTarget(_args.ProjectPathValue).ToList() :
+                new[] { _rootProject };
+            if (_args.NuGetFrameworkValue != null)
+            {
+                runtimeContexts = CompilerCommandApp.FilterProjectContextsByFramework(runtimeContexts, _args.NuGetFrameworkValue);
+            }
+            if (!string.IsNullOrEmpty(_args.RuntimeValue))
+            {
+                runtimeContexts = FilterProjectContextsByRuntime(runtimeContexts, _args.RuntimeValue);
+            }
+            
+            foreach (var runtimeContext in runtimeContexts)
+            {
+                var outputPaths = runtimeContext.GetOutputPaths(_args.ConfigValue, _args.BuildBasePathValue, _args.OutputValue);
+                var libraryExporter = runtimeContext.CreateExporter(_args.ConfigValue, _args.BuildBasePathValue);
 
-            var outputPaths = runtimeContext.GetOutputPaths(_args.ConfigValue, _args.BuildBasePathValue, _args.OutputValue);
-            var libraryExporter = runtimeContext.CreateExporter(_args.ConfigValue, _args.BuildBasePathValue);
+                CopyCompilationOutput(outputPaths);
 
-            CopyCompilationOutput(outputPaths);
+                var executable = new Executable(runtimeContext, outputPaths, libraryExporter, _args.ConfigValue);
+                executable.MakeCompilationOutputRunnable();
+            }
+        }
 
-            var executable = new Executable(runtimeContext, outputPaths, libraryExporter, _args.ConfigValue);
-            executable.MakeCompilationOutputRunnable();
+        public static List<ProjectContext> FilterProjectContextsByRuntime(List<ProjectContext> contexts, string rid)
+        {
+            return contexts.Where(t => rid.Equals(t.RuntimeIdentifier)).ToList();
         }
 
         private static IEnumerable<ProjectDescription> Sort(ProjectDependenciesFacade dependencies)
