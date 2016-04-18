@@ -43,6 +43,7 @@ namespace Microsoft.DotNet.Tools.Compiler
         public string ProjectPathValue { get; set; }
         public string BuildBasePathValue { get; set; }
         public string RuntimeValue { get; set; }
+        public string FrameworkValue { get; set; }
         public string OutputValue { get; set; }
         public string VersionSuffixValue { get; set; }
         public string ConfigValue { get; set; }
@@ -54,6 +55,8 @@ namespace Microsoft.DotNet.Tools.Compiler
         public bool IsCppModeValue { get; set; }
         public string AppDepSdkPathValue { get; set; }
         public string CppCompilerFlagsValue { get; set; }
+
+        public NuGetFramework NuGetFrameworkValue { get; set; }
 
         // workaround: CommandLineApplication is internal therefore I cannot make _app protected so baseclasses can add their own params
         private readonly Dictionary<string, CommandOption> baseClassOptions;
@@ -116,6 +119,7 @@ namespace Microsoft.DotNet.Tools.Compiler
                 BuildBasePathValue = _buildBasePath.Value();
                 ConfigValue = _configurationOption.Value() ?? Constants.DefaultConfiguration;
                 RuntimeValue = _runtimeOption.Value();
+                FrameworkValue = _frameworkOption.Value();
                 VersionSuffixValue = _versionSuffixOption.Value();
 
                 IsNativeValue = _nativeOption.HasValue();
@@ -146,15 +150,15 @@ namespace Microsoft.DotNet.Tools.Compiler
                 }
 
                 // Filter the targets down based on the inputs
-                if (_frameworkOption.HasValue())
+                if (!string.IsNullOrEmpty(FrameworkValue))
                 {
-                    var fx = NuGetFramework.Parse(_frameworkOption.Value());
-                    targets = targets.Where(t => fx.Equals(t.TargetFramework)).ToList();
+                    NuGetFrameworkValue = NuGetFramework.Parse(FrameworkValue);
+                    targets = FilterProjectContextsByFramework(targets, NuGetFrameworkValue).ToList();
 
                     if (targets.Count == 0)
                     {
                         // We filtered everything out
-                        Reporter.Error.WriteLine($"Project does not support framework: {fx.DotNetFrameworkName}.");
+                        Reporter.Error.WriteLine($"Project does not support framework: {NuGetFrameworkValue.DotNetFrameworkName}.");
                         return 1;
                     }
 
@@ -169,6 +173,11 @@ namespace Microsoft.DotNet.Tools.Compiler
             });
 
             return _app.Execute(args);
+        }
+
+        public static IEnumerable<ProjectContext> FilterProjectContextsByFramework(IEnumerable<ProjectContext> contexts, NuGetFramework framework)
+        {
+            return contexts.Where(t => framework.Equals(t.TargetFramework)).ToList();
         }
 
         public CompilerCommandApp ShallowCopy()
