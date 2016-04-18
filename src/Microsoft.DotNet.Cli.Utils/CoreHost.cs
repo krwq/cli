@@ -5,10 +5,18 @@ using Microsoft.Extensions.PlatformAbstractions;
 
 namespace Microsoft.DotNet.Cli.Utils
 {
-    public static class CoreHost
+    public class CoreHost
     {
         internal static string _hostDir;
         internal static string _hostExePath;
+        public static CoreHost Default;
+
+        public CoreHost(string rid)
+        {
+            // how to get the host location from rid?
+            throw new NotImplementedException();
+            Console.WriteLine("do not compile");
+        }
 
         public static string HostExePath
         {
@@ -35,9 +43,20 @@ namespace Microsoft.DotNet.Cli.Utils
             }
         }
 
-        public static void CopyTo(string destinationPath, string hostExeName)
+        public static void CopyTo(string destinationPath, string hostExeName, string rid = null)
         {
-            foreach (var binaryName in Constants.HostBinaryNames)
+            string[] hostBinaryNames = Constants.HostBinaryNames;
+
+            if (rid != null)
+            {
+                if (rid.ToLe
+                hostBinaryNames = new string[] {
+                    Constants.HostExecutableName,
+                    (CurrentPlatform == Platform.Windows ? "hostpolicy" : "libhostpolicy") + Constants.DynamicLibSuffix,
+                    (CurrentPlatform == Platform.Windows ? "hostfxr" : "libhostfxr") + Constants.DynamicLibSuffix
+            };
+
+            foreach (var binaryName in hostBinaryNames)
             {
                 var outputBinaryName = binaryName.Equals(Constants.HostExecutableName)
                                      ? hostExeName : binaryName;

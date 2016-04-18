@@ -80,8 +80,15 @@ namespace Microsoft.Dotnet.Cli.Compiler.Common
             var emitEntryPoint = _compilerOptions.EmitEntryPoint ?? false;
             if (emitEntryPoint && !string.IsNullOrEmpty(_context.RuntimeIdentifier))
             {
-                // TODO: Pick a host based on the RID
-                CoreHost.CopyTo(_runtimeOutputPath, _compilerOptions.OutputName + Constants.ExeSuffix);
+                if (_context.RuntimeIdentifier == null)
+                {
+                    CoreHost.CopyTo(_runtimeOutputPath, _compilerOptions.OutputName + Constants.ExeSuffix);
+                }
+                else
+                {
+                    string extension = _context.RuntimeIdentifier.ToLower().StartsWith("win") ? ".exe" : string.Empty;
+                    CoreHost.CopyTo(_runtimeOutputPath, _compilerOptions.OutputName + extension);
+                }
             }
         }
 
