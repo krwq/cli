@@ -148,11 +148,6 @@ namespace Microsoft.DotNet.Kestrel.Tests
 
             // the correct build assembly is next to its deps.json file 
             string rid = PlatformServices.Default.Runtime.GetRuntimeIdentifier();
-            Console.WriteLine($"rid = {rid}");
-            foreach (var path in Directory.EnumerateFiles(testRoot, appName + FileNameSuffixes.DepsJson, SearchOption.AllDirectories))
-            {
-                Console.WriteLine($"dir: {Directory.GetParent(path).Name} iscompat? {IsRidCompatibleWith(rid, Directory.GetParent(path).Name)}");
-            }
             var depsJsonFiles = Directory.EnumerateFiles(testRoot, appName + FileNameSuffixes.DepsJson, SearchOption.AllDirectories);
             string depsJsonFile;
             if (depsJsonFiles.Count() == 1)
