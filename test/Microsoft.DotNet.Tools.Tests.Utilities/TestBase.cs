@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using Microsoft.DotNet.Cli.Utils;
 using Microsoft.DotNet.TestFramework;
 using Microsoft.DotNet.ProjectModel;
+using Microsoft.Extensions.PlatformAbstractions;
 
 namespace Microsoft.DotNet.Tools.Test.Utilities
 {
@@ -23,6 +24,7 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
         private TempRoot _temp;
         private static TestAssetsManager s_testsAssetsMgr;
         private static string s_repoRoot;
+        private static string s_currentRid;
 
         protected static string RepoRoot
         {
@@ -78,6 +80,19 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
         public static string GetUniqueName()
         {
             return Guid.NewGuid().ToString("D");
+        }
+        
+        public string CurrentRid
+        {
+            get
+            {
+                if (s_currentRid == null)
+                {
+                    s_currentRid = PlatformServices.Default.Runtime.GetRuntimeIdentifier();
+                }
+                
+                return s_currentRid;
+            }
         }
 
         public TempRoot Temp
