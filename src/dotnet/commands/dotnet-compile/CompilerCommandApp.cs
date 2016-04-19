@@ -167,6 +167,17 @@ namespace Microsoft.DotNet.Tools.Compiler
 
                 Debug.Assert(targets.All(t => string.IsNullOrEmpty(t.RuntimeIdentifier)));
 
+                if (_outputOption.HasValue())
+                {
+                    Debug.Assert(_frameworkOption.HasValue());
+                    ProjectContext anyProjectContext = targets.First();
+                    if (!anyProjectContext.IsPortable && !_runtimeOption.HasValue())
+                    {
+                        Reporter.Error.WriteLine("When the '--output' option is provided and application is standalone, the '--runtime' option must also be provided.");
+                        return 1;
+                    }
+                }
+
                 var success = execute(targets, this);
 
                 return success ? 0 : 1;
