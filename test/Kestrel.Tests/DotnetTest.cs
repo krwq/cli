@@ -8,6 +8,7 @@ using System.Linq;
 using Microsoft.DotNet.ProjectModel;
 using Microsoft.DotNet.TestFramework;
 using Microsoft.DotNet.Tools.Test.Utilities;
+using Microsoft.Extensions.PlatformAbstractions;
 using Xunit;
 using System.Threading.Tasks;
 using FluentAssertions;
@@ -28,8 +29,8 @@ namespace Microsoft.DotNet.Kestrel.Tests
 
             var url = NetworkHelper.GetLocalhostUrlWithFreePort();
             var args = $"{url} {Guid.NewGuid().ToString()}";
+            string output = Build(Path.Combine(instance.TestRoot, KestrelPortable));
             var dotnetCommand = new DotnetCommand();
-            var output = Build(Path.Combine(instance.TestRoot, KestrelPortable));
 
             try
             {
@@ -51,18 +52,17 @@ namespace Microsoft.DotNet.Kestrel.Tests
 
             var url = NetworkHelper.GetLocalhostUrlWithFreePort();
             var args = $"{url} {Guid.NewGuid().ToString()}";
-            var dotnetCommand = new DotnetCommand();
-            var output = Build(Path.Combine(instance.TestRoot, KestrelStandalone));
+            var testCommand = new TestCommand(Build(Path.Combine(instance.TestRoot, KestrelStandalone)));
 
             try
             {
-                dotnetCommand.ExecuteAsync($"{output} {args}");
+                testCommand.ExecuteAsync(args);
                 NetworkHelper.IsServerUp(url).Should().BeTrue($"Unable to connect to kestrel server - {KestrelStandalone} @ {url}");
                 NetworkHelper.TestGetRequest(url, args);
             }
             finally
             {
-                dotnetCommand.KillTree();
+                testCommand.KillTree();
             }
         }
 
@@ -97,12 +97,11 @@ namespace Microsoft.DotNet.Kestrel.Tests
 
             var url = NetworkHelper.GetLocalhostUrlWithFreePort();
             var args = $"{url} {Guid.NewGuid().ToString()}";
-            var output = Publish(Path.Combine(instance.TestRoot, KestrelStandalone), false);
-            var command = new TestCommand(output);
+            var command = new TestCommand(Publish(Path.Combine(instance.TestRoot, KestrelStandalone), false));
 
             try
             {
-                command.ExecuteAsync($"{args}");
+                command.ExecuteAsync(args);
                 NetworkHelper.IsServerUp(url).Should().BeTrue($"Unable to connect to kestrel server - {KestrelStandalone} @ {url}");
                 NetworkHelper.TestGetRequest(url, args);
             }
@@ -112,6 +111,31 @@ namespace Microsoft.DotNet.Kestrel.Tests
             }
         }
 
+        private static bool IsRidCompatibleWith(string rid, string otherRid)
+        {
+            if (rid == otherRid)
+            {
+                return true;
+            }
+            
+            if (rid.EndsWith("x86") != otherRid.EndsWith("x86"))
+            {
+                return false;
+            }
+            
+            if (rid.StartsWith("win10-"))
+            {
+                return otherRid.StartsWith("win8-") || otherRid.StartsWith("win7-");
+            }
+            
+            if (rid.StartsWith("win8-"))
+            {
+                return otherRid.StartsWith("win7-");
+            }
+            
+            return false;
+        }
+        
         private static string Build(string testRoot)
         {
             string appName = Path.GetFileName(testRoot);
@@ -123,8 +147,37 @@ namespace Microsoft.DotNet.Kestrel.Tests
             result.Should().Pass();
 
             // the correct build assembly is next to its deps.json file 
-            var depsJsonFile = Directory.EnumerateFiles(testRoot, appName + FileNameSuffixes.DepsJson, SearchOption.AllDirectories).First();
-            return Path.Combine(Path.GetDirectoryName(depsJsonFile), appName + ".dll");
+            string rid = PlatformServices.Default.Runtime.GetRuntimeIdentifier();
+            Console.WriteLine($"rid = {rid}");
+            foreach (var path in Directory.EnumerateFiles(testRoot, appName + FileNameSuffixes.DepsJson, SearchOption.AllDirectories))
+            {
+                Console.WriteLine($"dir: {Directory.GetParent(path).Name} iscompat? {IsRidCompatibleWith(rid, Directory.GetParent(path).Name)}");
+            }
+            var depsJsonFiles = Directory.EnumerateFiles(testRoot, appName + FileNameSuffixes.DepsJson, SearchOption.AllDirectories);
+            string depsJsonFile;
+            if (depsJsonFiles.Count() == 1)
+            {
+                depsJsonFile = depsJsonFiles.First();
+            }
+            else
+            {
+                var standaloneAppDepsJsons = depsJsonFiles.Where((path) => IsRidCompatibleWith(rid, Directory.GetParent(path).Name));
+                depsJsonFile = standaloneAppDepsJsons.First();
+            }
+            
+            var appPath = Path.GetDirectoryName(depsJsonFile);
+            var exePath = Path.Combine(appPath, appName + (rid.StartsWith("win") ? ".exe" : ""));
+            if (File.Exists(exePath))
+            {
+                // standalone app
+                return exePath;
+            }
+            else
+            {
+                // portable app
+                var dllPath = Path.Combine(appPath, appName + ".dll");
+                return dllPath;
+            }
         }
 
         private static string Publish(string testRoot, bool isPortable)

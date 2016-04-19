@@ -20,7 +20,7 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
         public Process CurrentProcess { get; set; }
 
         public Dictionary<string, string> Environment { get; } = new Dictionary<string, string>();
-
+        
         public TestCommand(string command)
         {
             _command = command;
