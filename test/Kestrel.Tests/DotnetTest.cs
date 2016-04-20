@@ -140,9 +140,8 @@ namespace Microsoft.DotNet.Kestrel.Tests
         {
             string appName = Path.GetFileName(testRoot);
 
-            var result = new BuildCommand(
-                projectPath: testRoot)
-                .ExecuteWithCapturedOutput();
+            var buildCommand = new BuildCommand(projectPath: testRoot);
+            var result = buildCommand.ExecuteWithCapturedOutput();
 
             result.Should().Pass();
 
@@ -161,7 +160,7 @@ namespace Microsoft.DotNet.Kestrel.Tests
             }
             
             var appPath = Path.GetDirectoryName(depsJsonFile);
-            var exePath = Path.Combine(appPath, appName + (rid.StartsWith("win") ? ".exe" : ""));
+            var exePath = Path.Combine(appPath, buildCommand.GetOutputExecutableName());
             if (File.Exists(exePath))
             {
                 // standalone app
