@@ -153,7 +153,7 @@ namespace Microsoft.DotNet.Tools.Compiler
                 if (!string.IsNullOrEmpty(FrameworkValue))
                 {
                     NuGetFrameworkValue = NuGetFramework.Parse(FrameworkValue);
-                    targets = FilterProjectContextsByFramework(targets, NuGetFrameworkValue).ToList();
+                    targets = ProjectContext.FilterProjectContextsByFramework(targets, NuGetFrameworkValue).ToList();
 
                     if (targets.Count == 0)
                     {
@@ -184,11 +184,6 @@ namespace Microsoft.DotNet.Tools.Compiler
             });
 
             return _app.Execute(args);
-        }
-
-        public static IEnumerable<ProjectContext> FilterProjectContextsByFramework(IEnumerable<ProjectContext> contexts, NuGetFramework framework)
-        {
-            return contexts.Where(t => framework.Equals(t.TargetFramework)).ToList();
         }
 
         public CompilerCommandApp ShallowCopy()

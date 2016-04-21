@@ -155,31 +155,6 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
             return result;
         }
 
-        protected void TestOutputExecutable(
-            string outputDir,
-            string executableName,
-            string expectedOutput,
-            bool native = false)
-        {
-            TestExecutable(GetCompilationOutputPath(outputDir, native), executableName, expectedOutput);
-        }
-
-        protected void TestNativeOutputExecutable(string outputDir, string executableName, string expectedOutput)
-        {
-            TestOutputExecutable(outputDir, executableName, expectedOutput, true);
-        }
-
-        protected string GetCompilationOutputPath(string outputDir, bool native)
-        {
-            var executablePath = outputDir;
-            if (native)
-            {
-                executablePath = Path.Combine(executablePath, "native");
-            }
-
-            return executablePath;
-        }
-
         private bool IsPortable(string executablePath)
         {
             var commandDir = Path.GetDirectoryName(executablePath);

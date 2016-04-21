@@ -241,7 +241,7 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
             _noIncremental = noIncremental;
             _noDependencies = noDependencies;
             
-            if (!string.IsNullOrEmpty(_outputDirectory) && string.IsNullOrEmpty(_runtime))
+            /*if (!string.IsNullOrEmpty(_outputDirectory) && string.IsNullOrEmpty(_runtime))
             {
                 throw new Exception("verify and fix me (make sure it is standalone app)");
             }/**/

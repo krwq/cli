@@ -25,21 +25,22 @@ namespace Microsoft.DotNet.Tools.Build
 
         private readonly ProjectContext _rootProject;
         private readonly ProjectDependenciesFacade _rootProjectDependencies;
-        private readonly BuilderCommandApp _args;
         private readonly IncrementalPreconditions _preconditions;
 
         public bool IsSafeForIncrementalCompilation => !_preconditions.PreconditionsDetected();
 
+        public BuilderCommandApp Args { get; set; }
+        
         public CompileContext(ProjectContext rootProject, BuilderCommandApp args)
         {
             _rootProject = rootProject;
 
             // Cleaner to clone the args and mutate the clone than have separate CompileContext fields for mutated args
             // and then reasoning which ones to get from args and which ones from fields.
-            _args = (BuilderCommandApp)args.ShallowCopy();
+            Args = (BuilderCommandApp)args.ShallowCopy();
 
             // Set up dependencies
-            _rootProjectDependencies = new ProjectDependenciesFacade(_rootProject, _args.ConfigValue);
+            _rootProjectDependencies = new ProjectDependenciesFacade(_rootProject, Args.ConfigValue);
 
             // gather preconditions
             _preconditions = GatherIncrementalPreconditions();
@@ -75,7 +76,7 @@ namespace Microsoft.DotNet.Tools.Build
 
         private bool CompileDependencies(bool incremental)
         {
-            if (_args.ShouldSkipDependencies)
+            if (Args.ShouldSkipDependencies)
             {
                 return true;
             }
@@ -86,7 +87,7 @@ namespace Microsoft.DotNet.Tools.Build
 
                 try
                 {
-                    if (incremental && !NeedsRebuilding(dependencyProjectContext, new ProjectDependenciesFacade(dependencyProjectContext, _args.ConfigValue)))
+                    if (incremental && !NeedsRebuilding(dependencyProjectContext, new ProjectDependenciesFacade(dependencyProjectContext, Args.ConfigValue)))
                     {
                         continue;
                     }
@@ -109,7 +110,7 @@ namespace Microsoft.DotNet.Tools.Build
         {
             if (CLIChangedSinceLastCompilation(project))
             {
-                Reporter.Output.WriteLine($"Project {project.GetDisplayName()} will be compiled because the version or bitness of the CLI changed since the last build");
+                Reporter.Verbose.WriteLine($"Project {project.GetDisplayName()} will be compiled because the version or bitness of the CLI changed since the last build");
                 return true;
             }
 
@@ -194,7 +195,7 @@ namespace Microsoft.DotNet.Tools.Build
         private bool CLIChangedSinceLastCompilation(ProjectContext project)
         {
             var currentVersionFile = DotnetFiles.VersionFile;
-            var versionFileFromLastCompile = project.GetSDKVersionFile(_args.ConfigValue, _args.BuildBasePathValue, _args.OutputValue);
+            var versionFileFromLastCompile = project.GetSDKVersionFile(Args.ConfigValue, Args.BuildBasePathValue, Args.OutputValue);
 
             if (!File.Exists(currentVersionFile))
             {
@@ -219,7 +220,7 @@ namespace Microsoft.DotNet.Tools.Build
         {
             if (File.Exists(DotnetFiles.VersionFile))
             {
-                var projectVersionFile = project.GetSDKVersionFile(_args.ConfigValue, _args.BuildBasePathValue, _args.OutputValue);
+                var projectVersionFile = project.GetSDKVersionFile(Args.ConfigValue, Args.BuildBasePathValue, Args.OutputValue);
                 var parentDirectory = Path.GetDirectoryName(projectVersionFile);
 
                 if (!Directory.Exists(parentDirectory))
@@ -259,21 +260,21 @@ namespace Microsoft.DotNet.Tools.Build
 
         private void CreateOutputDirectories()
         {
-            if (!string.IsNullOrEmpty(_args.OutputValue))
+            if (!string.IsNullOrEmpty(Args.OutputValue))
             {
-                Directory.CreateDirectory(_args.OutputValue);
+                Directory.CreateDirectory(Args.OutputValue);
             }
-            if (!string.IsNullOrEmpty(_args.BuildBasePathValue))
+            if (!string.IsNullOrEmpty(Args.BuildBasePathValue))
             {
-                Directory.CreateDirectory(_args.BuildBasePathValue);
+                Directory.CreateDirectory(Args.BuildBasePathValue);
             }
         }
 
         private IncrementalPreconditions GatherIncrementalPreconditions()
         {
-            var preconditions = new IncrementalPreconditions(_args.ShouldPrintIncrementalPreconditions);
+            var preconditions = new IncrementalPreconditions(Args.ShouldPrintIncrementalPreconditions);
 
-            if (_args.ShouldNotUseIncrementality)
+            if (Args.ShouldNotUseIncrementality)
             {
                 preconditions.AddForceUnsafePrecondition();
             }
@@ -293,7 +294,7 @@ namespace Microsoft.DotNet.Tools.Build
         // check the entire project tree that needs to be compiled, duplicated for each framework
         private List<ProjectContext> GetProjectsToCheck()
         {
-            if (_args.ShouldSkipDependencies)
+            if (Args.ShouldSkipDependencies)
             {
                 return new List<ProjectContext>(1) { _rootProject };
             }
@@ -363,25 +364,25 @@ namespace Microsoft.DotNet.Tools.Build
             args.Add($"{projectDependency.Framework}");
 
             args.Add("--configuration");
-            args.Add(_args.ConfigValue);
+            args.Add(Args.ConfigValue);
             args.Add(projectDependency.Project.ProjectDirectory);
 
-            if (!string.IsNullOrWhiteSpace(_args.RuntimeValue))
+            if (!string.IsNullOrWhiteSpace(Args.RuntimeValue))
             {
                 args.Add("--runtime");
-                args.Add(_args.RuntimeValue);
+                args.Add(Args.RuntimeValue);
             }
 
-            if (!string.IsNullOrEmpty(_args.VersionSuffixValue))
+            if (!string.IsNullOrEmpty(Args.VersionSuffixValue))
             {
                 args.Add("--version-suffix");
-                args.Add(_args.VersionSuffixValue);
+                args.Add(Args.VersionSuffixValue);
             }
 
-            if (!string.IsNullOrWhiteSpace(_args.BuildBasePathValue))
+            if (!string.IsNullOrWhiteSpace(Args.BuildBasePathValue))
             {
                 args.Add("--build-base-path");
-                args.Add(_args.BuildBasePathValue);
+                args.Add(Args.BuildBasePathValue);
             }
 
             var compileResult = CompileCommand.Run(args.ToArray());
@@ -396,71 +397,71 @@ namespace Microsoft.DotNet.Tools.Build
             args.Add("--framework");
             args.Add(_rootProject.TargetFramework.ToString());
             args.Add("--configuration");
-            args.Add(_args.ConfigValue);
+            args.Add(Args.ConfigValue);
 
-            if (!string.IsNullOrWhiteSpace(_args.RuntimeValue))
+            if (!string.IsNullOrWhiteSpace(Args.RuntimeValue))
             {
                 args.Add("--runtime");
-                args.Add(_args.RuntimeValue);
+                args.Add(Args.RuntimeValue);
             }
 
-            if (!string.IsNullOrEmpty(_args.OutputValue))
+            if (!string.IsNullOrEmpty(Args.OutputValue))
             {
                 args.Add("--output");
-                args.Add(_args.OutputValue);
+                args.Add(Args.OutputValue);
             }
 
-            if (!string.IsNullOrEmpty(_args.VersionSuffixValue))
+            if (!string.IsNullOrEmpty(Args.VersionSuffixValue))
             {
                 args.Add("--version-suffix");
-                args.Add(_args.VersionSuffixValue);
+                args.Add(Args.VersionSuffixValue);
             }
 
-            if (!string.IsNullOrEmpty(_args.BuildBasePathValue))
+            if (!string.IsNullOrEmpty(Args.BuildBasePathValue))
             {
                 args.Add("--build-base-path");
-                args.Add(_args.BuildBasePathValue);
+                args.Add(Args.BuildBasePathValue);
             }
 
             //native args
-            if (_args.IsNativeValue)
+            if (Args.IsNativeValue)
             {
                 args.Add("--native");
             }
 
-            if (_args.IsCppModeValue)
+            if (Args.IsCppModeValue)
             {
                 args.Add("--cpp");
             }
 
-            if (!string.IsNullOrWhiteSpace(_args.CppCompilerFlagsValue))
+            if (!string.IsNullOrWhiteSpace(Args.CppCompilerFlagsValue))
             {
                 args.Add("--cppcompilerflags");
-                args.Add(_args.CppCompilerFlagsValue);
+                args.Add(Args.CppCompilerFlagsValue);
             }
 
-            if (!string.IsNullOrWhiteSpace(_args.ArchValue))
+            if (!string.IsNullOrWhiteSpace(Args.ArchValue))
             {
                 args.Add("--arch");
-                args.Add(_args.ArchValue);
+                args.Add(Args.ArchValue);
             }
 
-            foreach (var ilcArg in _args.IlcArgsValue)
+            foreach (var ilcArg in Args.IlcArgsValue)
             {
                 args.Add("--ilcarg");
                 args.Add(ilcArg);
             }
 
-            if (!string.IsNullOrWhiteSpace(_args.IlcPathValue))
+            if (!string.IsNullOrWhiteSpace(Args.IlcPathValue))
             {
                 args.Add("--ilcpath");
-                args.Add(_args.IlcPathValue);
+                args.Add(Args.IlcPathValue);
             }
 
-            if (!string.IsNullOrWhiteSpace(_args.IlcSdkPathValue))
+            if (!string.IsNullOrWhiteSpace(Args.IlcSdkPathValue))
             {
                 args.Add("--ilcsdkpath");
-                args.Add(_args.IlcSdkPathValue);
+                args.Add(Args.IlcSdkPathValue);
             }
 
             args.Add(_rootProject.ProjectDirectory);
@@ -500,45 +501,29 @@ namespace Microsoft.DotNet.Tools.Build
             }
         }
 
-        private IEnumerable<ProjectContext> CreateAllRuntimeContexts()
-        {
-            if (!_rootProject.ProjectFile.HasRuntimeOutput(_args.ConfigValue))
-            {
-                return new[] { _rootProject };
-            }
-
-            IEnumerable<ProjectContext> allContexts = ProjectContext.CreateContextForEachTarget(_rootProject.ProjectFile.ProjectFilePath);
-            IEnumerable<ProjectContext> runtimeContextsForTarget = CompilerCommandApp.FilterProjectContextsByFramework(allContexts, _rootProject.TargetFramework);
-
-            if (!string.IsNullOrEmpty(_args.RuntimeValue))
-            {
-                return FilterProjectContextsByRuntime(runtimeContextsForTarget, _args.RuntimeValue);
-            }
-            else
-            {
-                return runtimeContextsForTarget;
-            }
-        }
-
         private void MakeRunnable()
         {
-            IEnumerable<ProjectContext> runtimeContexts = CreateAllRuntimeContexts();
-            
-            foreach (var runtimeContext in runtimeContexts)
+            foreach (var runtimeContext in CreateRuntimeContexts())
             {
-                var outputPaths = runtimeContext.GetOutputPaths(_args.ConfigValue, _args.BuildBasePathValue, _args.OutputValue);
-                var libraryExporter = runtimeContext.CreateExporter(_args.ConfigValue, _args.BuildBasePathValue);
+                var outputPaths = runtimeContext.GetOutputPaths(Args.ConfigValue, Args.BuildBasePathValue, Args.OutputValue);
+                var libraryExporter = runtimeContext.CreateExporter(Args.ConfigValue, Args.BuildBasePathValue);
 
                 CopyCompilationOutput(outputPaths);
 
-                var executable = new Executable(runtimeContext, outputPaths, libraryExporter, _args.ConfigValue);
+                var executable = new Executable(runtimeContext, outputPaths, libraryExporter, Args.ConfigValue);
                 executable.MakeCompilationOutputRunnable();
             }
         }
-
-        public static IEnumerable<ProjectContext> FilterProjectContextsByRuntime(IEnumerable<ProjectContext> contexts, string rid)
+        
+        public IEnumerable<ProjectContext> CreateRuntimeContexts()
         {
-            return contexts.Where(t => rid.Equals(t.RuntimeIdentifier)).ToList();
+            var allRuntimeContexts = _rootProject.CreateAllRuntimeContexts(Args.ConfigValue);
+            if (!string.IsNullOrEmpty(Args.RuntimeValue))
+            {
+                return ProjectContext.FilterProjectContextsByRuntime(allRuntimeContexts, Args.RuntimeValue);
+            }
+
+            return allRuntimeContexts;
         }
 
         private static IEnumerable<ProjectDescription> Sort(ProjectDependenciesFacade dependencies)
@@ -594,9 +579,9 @@ namespace Microsoft.DotNet.Tools.Build
         // ensures no missing inputs
         public CompilerIO GetCompileIO(ProjectContext project, ProjectDependenciesFacade dependencies)
         {
-            var buildConfiguration = _args.ConfigValue;
-            var buildBasePath = _args.BuildBasePathValue;
-            var outputPath = _args.OutputValue;
+            var buildConfiguration = Args.ConfigValue;
+            var buildBasePath = Args.BuildBasePathValue;
+            var outputPath = Args.OutputValue;
             var isRootProject = project == _rootProject;
 
             var compilerIO = new CompilerIO(new List<string>(), new List<string>());
@@ -617,9 +602,8 @@ namespace Microsoft.DotNet.Tools.Build
             AddDependencies(dependencies, compilerIO);
 
             var allOutputPath = new HashSet<string>(calculator.CompilationFiles.All());
-            if (isRootProject && project.ProjectFile.HasRuntimeOutput(buildConfiguration))
+            foreach (var runtimeContext in CreateRuntimeContexts())
             {
-                var runtimeContext = project.CreateRuntimeContext(_args.GetRuntimes());
                 foreach (var path in runtimeContext.GetOutputPaths(buildConfiguration, buildBasePath, outputPath).RuntimeFiles.All())
                 {
                     allOutputPath.Add(path);

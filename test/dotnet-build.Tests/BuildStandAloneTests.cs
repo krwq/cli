@@ -69,14 +69,14 @@ namespace Microsoft.DotNet.Tools.Builder.Tests
                 projectPath: projectPath)
                 .ExecuteWithCapturedOutput();
 
+            result.Should().Pass();
+            
             var contexts = ProjectContext.CreateContextForEachFramework(
                 projectPath,
                 null,
                 PlatformServices.Default.Runtime.GetAllCandidateRuntimeIdentifiers());
 
             var runtime = contexts.FirstOrDefault(c => !string.IsNullOrEmpty(c.RuntimeIdentifier))?.RuntimeIdentifier;
-
-            result.Should().Pass();
 
             var outputBase = new DirectoryInfo(
                 Path.Combine(testInstance.TestRoot, "StandaloneApp", "bin", "Debug", "netcoreapp1.0"));
