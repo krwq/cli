@@ -120,7 +120,7 @@ namespace Microsoft.DotNet.Tools.Compiler.Tests
             // run compile
             var outputDir = Path.Combine(root, "bin");
             var testProject = ProjectUtils.GetProjectJson(root, "TestAppWithContentPackage");
-            var buildCommand = new BuildCommand(testProject, output: outputDir, framework: DefaultFramework, runtime: "win7-x64");
+            var buildCommand = new BuildCommand(testProject, output: outputDir, framework: DefaultFramework, runtime: CurrentRid);
             var result = buildCommand.ExecuteWithCapturedOutput();
             result.Should().Pass();
 
@@ -176,12 +176,14 @@ namespace Microsoft.DotNet.Tools.Compiler.Tests
             var root = testInstance.TestRoot;
             var outputDir = Path.Combine(root, "bin");
             var testProject = ProjectUtils.GetProjectJson(root, "AppWithOutputAssemblyName");
-            var buildCommand = new BuildCommand(testProject, output: outputDir, framework: DefaultFramework, runtime: "win7-x64");
+            var buildCommand = new BuildCommand(testProject, output: outputDir, framework: DefaultFramework, runtime: CurrentRid);
             var result = buildCommand.ExecuteWithCapturedOutput();
             result.Should().Pass();
 
+            var appHostName = "MyApp" + buildCommand.GetExecutableExtension();
+
             new DirectoryInfo(outputDir).Should().HaveFiles(
-                new[] { "MyApp.dll", "MyApp.exe",
+                new[] { "MyApp.dll", appHostName ,
                     "MyApp.runtimeconfig.json", "MyApp.deps.json" });
         }
 

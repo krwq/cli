@@ -105,7 +105,7 @@ namespace Microsoft.DotNet.Tools.Test.Utilities
             {
                 if (s_currentRid == null)
                 {
-                    s_currentRid = PlatformServices.Default.Runtime.GetRuntimeIdentifier();
+                    s_currentRid = PlatformServices.Default.Runtime.GetLegacyRestoreRuntimeIdentifier();
                 }
                 
                 return s_currentRid;
