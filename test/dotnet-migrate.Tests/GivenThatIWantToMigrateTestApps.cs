@@ -677,6 +677,23 @@ namespace Microsoft.DotNet.Migration.Tests
             Restore(projectDirectory, projectName);
             BuildMSBuild(projectDirectory, projectName);
         }
+
+        [Fact]
+        public void ItMigratesAndBuildsAppWithSharedKey()
+        {
+            const string projectName = "PJTestAppWithSharedKey";
+            var projectDirectory = TestAssets.Get(projectName)
+                .CreateInstance()
+                .WithSourceFiles()
+                .Root;
+
+            var testAppDirectory = new DirectoryInfo(Path.Combine(projectDirectory.FullName, "TestApp"));
+
+            MigrateProject(testAppDirectory);
+            Restore(testAppDirectory);
+            Restore(new DirectoryInfo(Path.Combine(projectDirectory.FullName, "TestLibrary")));
+            BuildMSBuild(testAppDirectory);
+        }
         
         private void VerifyAutoInjectedDesktopReferences(DirectoryInfo projectDirectory, string projectName, bool shouldBePresent)
         {
@@ -845,6 +862,11 @@ namespace Microsoft.DotNet.Migration.Tests
                     .Pass();
         }
 
+        private void MigrateProject(params DirectoryInfo[] migrateDirs)
+        {
+            MigrateProject(migrateDirs.Select((d) => d.FullName).ToArray());
+        }
+
         private void RestoreProjectJson(DirectoryInfo projectDirectory)
         {
             var projectFile = $"\"{projectDirectory.GetFile("project.json").FullName}\"";
@@ -877,7 +899,7 @@ namespace Microsoft.DotNet.Migration.Tests
 
         private string BuildMSBuild(
             DirectoryInfo projectDirectory,
-            string projectName,
+            string projectName = null,
             string configuration="Debug",
             string runtime=null,
             string framework=null)

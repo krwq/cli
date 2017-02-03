@@ -12,13 +12,14 @@ using Microsoft.DotNet.Internal.ProjectModel;
 using Microsoft.DotNet.Tools.Common;
 using NuGet.Frameworks;
 using NuGet.LibraryModel;
+using Microsoft.DotNet.Internal.ProjectModel.Files;
 
 namespace Microsoft.DotNet.ProjectJsonMigration.Rules
 {
     internal class MigrateProjectDependenciesRule : IMigrationRule
     {
         private readonly ITransformApplicator _transformApplicator;
-        private readonly  ProjectDependencyFinder _projectDependencyFinder;
+        private readonly ProjectDependencyFinder _projectDependencyFinder;
         private string _projectDirectory;
 
         public MigrateProjectDependenciesRule(ITransformApplicator transformApplicator = null)
@@ -105,6 +106,75 @@ namespace Microsoft.DotNet.ProjectJsonMigration.Rules
             }
         }
 
+        private IEnumerable<string> RemoveBuiltinIncludeSharedPatterns(IEnumerable<string> includePatterns)
+        {
+            return includePatterns.Where((pattern) => pattern != @"compiler\shared\**\*.cs");
+        }
+
+        private static string EnsureRootedPath(string path, string defaultRootDirectory)
+        {
+            if (Path.IsPathRooted(path))
+            {
+                return path;
+            }
+
+            return Path.Combine(defaultRootDirectory, path);
+        }
+
+        private static string RebaseRelativePath(string path, string oldBaseDirectory, string newBaseDirectory)
+        {
+            string fullPath = EnsureRootedPath(path, oldBaseDirectory);
+            return PathUtility.GetRelativePath(PathUtility.EnsureTrailingSlash(newBaseDirectory), fullPath);
+        }
+
+        private static string NormalizeSlashesForMsbuild(string path)
+        {
+            return path.Replace('/', '\\');
+        }
+
+        private static IEnumerable<string> PreparePathsForMsbuild(IEnumerable<string> paths, string oldBaseDirectory, string newBaseDirectory)
+        {
+            return paths.Select((path) => RebaseRelativePath(path, oldBaseDirectory, newBaseDirectory))
+                        .Select((path) => NormalizeSlashesForMsbuild(path));
+        }
+
+        private void MigrateSharedKey(Project project, NuGetFramework framework, List<ProjectDependency> dependencies, ProjectRootElement outputMSBuildProject)
+        {
+            var itemGroup = new Lazy<ProjectItemGroupElement>(() => outputMSBuildProject.AddItemGroup());
+
+            foreach (var projectDependencyPath in dependencies)
+            {
+                var projectDependency = ProjectReader.GetProject(projectDependencyPath.ProjectFilePath);
+                var sharedPatterns = projectDependency.Files.SharedPatternsGroup;
+
+                var depRoot = new FileInfo(projectDependencyPath.ProjectFilePath).Directory.FullName;
+                string[] includePatterns = PreparePathsForMsbuild(
+                                               RemoveBuiltinIncludeSharedPatterns(sharedPatterns.IncludePatterns),
+                                               depRoot,
+                                               project.ProjectDirectory)
+                                           .ToArray();
+                string[] excludePatterns = PreparePathsForMsbuild(
+                                               sharedPatterns.ExcludePatterns,
+                                               depRoot,
+                                               project.ProjectDirectory)
+                                           .ToArray();
+
+                if (includePatterns.Length > 0)
+                {
+                    var t = new AddItemTransform<bool>("Compile", includePatterns, excludePatterns, (cond) => true);
+                    t.WithMetadata("Link", "$([MSBuild]::MakeRelative('$(MSBuildThisFileDirectory)', '%(FullPath)'))");
+                    if (framework != null)
+                    {
+                        t.WithMetadata("Condition", $" '$(TargetFramework)' == '{framework.GetShortFolderName()}' ", expressedAsAttribute: true);
+                    }
+
+                    _transformApplicator.Execute(t.ConditionallyTransform(source: true),
+                                                 itemGroup.Value,
+                                                 mergeExisting: true);
+                }
+            }
+        }
+
         private void MigrateProjectJsonProjectDependency(
             Project project,
             NuGetFramework framework,
@@ -116,7 +186,8 @@ namespace Microsoft.DotNet.ProjectJsonMigration.Rules
                     new ProjectDependency(project.Name, project.ProjectFilePath),
                     framework,
                     migratedXProjDependencyNames,
-                    solutionFile);
+                    solutionFile)
+                    .ToList();
 
             var projectDependencyTransformResults = 
                 projectDependencies.Select(p => ProjectDependencyTransform.Transform(p));
@@ -128,6 +199,8 @@ namespace Microsoft.DotNet.ProjectJsonMigration.Rules
                     projectDependencyTransformResults, 
                     framework);
             }
+
+            MigrateSharedKey(project, framework, projectDependencies, outputMSBuildProject);
         }
 
         private void AddProjectDependenciesToNewItemGroup(
